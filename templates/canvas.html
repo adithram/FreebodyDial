@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<script src="fbd-exp.js"></script>
+<script src="jquery-3.1.1.min.js"></script>
+<script type="text/javascript">
+var g_app;
+$(document).ready(function() {
+    start_app();
+    $(document).keydown  (function(event) { g_app.key_press  (event.keyCode); });
+    $(document).keyup    (function(event) { g_app.key_release(event.keyCode); });
+    $(document).mousemove(function(event) { g_app.mouse_move({ x: event.pageX, y: event.pageY }); });
+});
+</script>
+
+</head>
+<body>
+<canvas id="main-canvas"  width="640" height="480"></canvas><br />
+<span id="debug-message"></span>
+</body>
+</html>
