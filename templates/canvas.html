@@ -11,12 +11,16 @@ $(document).ready(function() {
     $(document).keydown  (function(event) { g_app.key_press  (event.keyCode); });
     $(document).keyup    (function(event) { g_app.key_release(event.keyCode); });
     $(document).mousemove(function(event) { g_app.mouse_move({ x: event.pageX, y: event.pageY }); });
+    $(document).mousedown(function(event) { g_app.mouse_click  (); });
+    $(document).mouseup  (function(event) { g_app.mouse_release(); });
+    g_app.set_listen_target("input.html");
 });
 </script>
 
 </head>
 <body>
 <canvas id="main-canvas"  width="640" height="480"></canvas><br />
-<span id="debug-message"></span>
+<span id="debug-message-1"></span><br />
+<span id="debug-message-2"></span>
 </body>
 </html>
