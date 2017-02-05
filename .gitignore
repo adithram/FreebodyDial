@@ -1,0 +1,11 @@
+*.pyc
+venv/*
+.vagrant/*
+__pycache__/*
+controllers/__pycache__/*
+controllers/*.pyc
+static/images/*
+.DS_Store
+static/.DS_Store
+sftp-config.json
+Vagrantfile
