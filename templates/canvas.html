@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<script src="fbd-exp.js"></script>
+<script src="../static/fbd-exp.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 <script type="text/javascript">
 var g_app;
@@ -13,13 +13,21 @@ $(document).ready(function() {
     $(document).mousemove(function(event) { g_app.mouse_move({ x: event.pageX, y: event.pageY }); });
     $(document).mousedown(function(event) { g_app.mouse_click  (); });
     $(document).mouseup  (function(event) { g_app.mouse_release(); });
-    g_app.set_listen_target("input.json");
+    //g_app.set_listen_target("input.json");
 });
+/*
+var web_sock = new WebSocket("ws://localhost:3000/input.json");
+web_sock.onmessage = function(event) {
+    
+};*/
+
 </script>
 
 </head>
 <body>
 <canvas id="main-canvas"  width="640" height="480"></canvas><br />
+<!-- present to help keep my machine from overheating while debugging -->
+<a href="javascript:g_app.pause_execution();">PAUSE</a> <a href="javascript:g_app.resume_execution();">RESUME</a>
 <span id="debug-message-1"></span><br />
 <span id="debug-message-2"></span>
 </body>
