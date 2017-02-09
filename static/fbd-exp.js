@@ -13,10 +13,7 @@ var assert_new = {
 
 Object.freeze(assert_new);
 
-function assert_not_nan(f) {
-    if (f != f)
-        throw "Nan!";
-}
+function assert_not_nan(f) { if (f != f) throw "Nan!"; }
 
 function array_last(arr) { return arr[arr.length - 1]; }
 
@@ -64,19 +61,27 @@ function for_each(array, callback) {
     }
 }
 
+/** The set of small boxes, which allows the user to edit a Line primative.
+ *  @note This type is not meant to be used with any other expect for Line.
+ */
 function LineControlPoints(point_a, point_b) {
     assert_new.check(this);
     
     var m_point_size = 10;
     
-    var m_move_point_a = bounds_around(point_a);
-    var m_move_point_b = bounds_around(point_b);
-    var m_move_whole_line = bounds_around(avg_vect(point_a, point_b));
+    // style note: these "declarations" doesn't create any members,
+    //             this is more of an FYI: "these are the names for these
+    //             things which are created in the future"
+    var m_move_point_a = undefined;
+    var m_move_point_b = undefined;
+    var m_move_whole_line = undefined;
     var m_update_control_point_func = undefined;
     
     function bounds_around(point) {
-        return { x: point.x - m_point_size/2, y: point.y - m_point_size/2,
-                 width: m_point_size, height: m_point_size };
+        return { x: point.x - m_point_size/2, 
+                 y: point.y - m_point_size/2,
+                 width : m_point_size, 
+                 height: m_point_size };
     }
     
     function avg_vect(u, v) {
@@ -93,28 +98,32 @@ function LineControlPoints(point_a, point_b) {
         context.stroke();
     }
     
-    var update_point_a = function(cursor_pos, parent) {
-        parent.set_at(cursor_pos);
+    var update_point_a = function(cursor_pos) {
         m_move_point_a = bounds_around(cursor_pos);
         m_move_whole_line = bounds_around(avg_vect(cursor_pos, m_move_point_b));
+        return { a: cursor_pos };
     };
     
-    var update_point_b = function(cursor_pos, parent) {
-        parent.pull(cursor_pos);
+    var update_point_b = function(cursor_pos) {
         m_move_point_b = bounds_around(cursor_pos);
         m_move_whole_line = bounds_around(avg_vect(m_move_point_a, cursor_pos));
+        return { b: cursor_pos };
     };
     
-    var update_both_points = function(cursor_pos, parent) {
+    var update_both_points = function(cursor_pos) {
         var center_of = function(bounds) {
             return { x: bounds.x + bounds.width/2, y: bounds.y + bounds.height/2 };
         };
         var cent = center_of(m_move_whole_line);
-        var to_a = Vector.sub(center_of(m_move_point_a, cent));
-        var to_b = Vector.sub(center_of(m_move_point_b, cent));
-        m_move_whole_line = bounds_around(cent);
-        m_move_point_a = bounds_around(Vector.add(cent, to_a));
-        m_move_point_b = bounds_around(Vector.add(cent, to_b));
+        var to_a = Vector.sub(center_of(m_move_point_a), cent);
+        var to_b = Vector.sub(center_of(m_move_point_b), cent);
+        
+        m_move_whole_line = bounds_around(cursor_pos);
+        var resp = { a: Vector.add(cursor_pos, to_a),
+                     b: Vector.add(cursor_pos, to_b) };
+        m_move_point_a = bounds_around(resp.a);
+        m_move_point_b = bounds_around(resp.b);
+        return resp;
     };
     
     this.draw = function(context) {
@@ -123,12 +132,23 @@ function LineControlPoints(point_a, point_b) {
         draw_point_bounds(context, m_move_whole_line, 'blue'  );
     }
     
-    this.update_control_point = function(cursor_pos, parent) {
-        if (m_update_control_point_func === undefined) return;
-        m_update_control_point_func(cursor_pos, parent);
+    /** Updates control point locations in accordance with which control point 
+     *  is currently being dragged.
+     *  @param cursor_pos {Vector}
+     *  @return Returns an object optionally containing "a" and/or "b" 
+     *          indicating new locations for the corresponding points for the 
+     *          parent. (The parent is expected to modify its points to match.
+     */
+    this.handle_cursor_move = function(cursor_pos) {
+        if (m_update_control_point_func === undefined) return {};
+        return m_update_control_point_func(cursor_pos);
     }
     
-    this.handle_control_point_click = function(cursor_pos, parent) {
+    this.handle_cursor_click = function(cursor_pos, pressed) {
+        if (!pressed) {
+            m_update_control_point_func = undefined;
+            return '';
+        }
         if (Vector.in_bounds(cursor_pos, m_move_point_a)) {
             m_update_control_point_func = update_point_a;
             return 'a';
@@ -139,14 +159,33 @@ function LineControlPoints(point_a, point_b) {
         }
         if (Vector.in_bounds(cursor_pos, m_move_whole_line)) {
             m_update_control_point_func = update_both_points;
-            return 'b';
+            return 'both';
         }
+        return '';
     }
+    
+    this.is_editing_point_a = function()
+        { return m_update_control_point_func === update_point_a; }
+    
+    this.is_editing_point_b = function()
+        { return m_update_control_point_func === update_point_b; }
+    
+    this.set_points = function(point_a, point_b) {
+        m_move_point_a = bounds_around(point_a);
+        m_move_point_b = bounds_around(point_b);
+        m_move_whole_line = bounds_around(avg_vect(point_a, point_b));
+    }
+    this.set_points(point_a, point_b);
 }
 
 // proposal: adding clickable 'widgets' on these diagram primatives
 // allowing for movement, rotation grouping(?) and anything else we need
 // though there is risk of crowding the interface
+
+/** A Line is a diagram primative.
+ *  @note client code should not concern itself with what is "point a" and what
+ *        is "point b".
+ */
 function Line() {
     assert_new.check(this);
 
@@ -154,14 +193,42 @@ function Line() {
     var m_point_b = zero_vect();
     var m_control_points = undefined;
     
+    var m_handle_cursor_move_func  = function(c){};
+    var m_handle_cursor_click_func = function(c, p){ return false; };
+    
+    var handle_cursor_move_editing = function(cursor_pos) {
+        var gv = m_control_points.handle_cursor_move(cursor_pos);
+        var rv = false;
+        if (gv.a !== undefined) {
+            m_point_a = gv.a;
+            rv = true;
+        }
+        if (gv.b !== undefined) {
+            m_point_b = gv.b;
+            rv = true;
+        }
+        return rv;
+    };
+    
+    var handle_cursor_click_editing = function(cursor_pos, pressed) {
+        m_control_points.handle_cursor_click(cursor_pos, pressed);
+    };
+    
     /**************************************************************************
                                   Line Creation
     **************************************************************************/
 
-    this.set_at = function(v) { m_point_a = v; }
+    this.set_at = function(v) { m_point_b = m_point_a = v; }
 
     this.pull = function(v) { m_point_b = v; }
     
+    /** While the Line is being pulled (as part of its creation) or edited;
+     *  snap_to_guideline will add a snapping effect allowing for more 
+     *  consistent diagrams.
+     *  @param guide_line {Vector} A unit vector, representing a line, which 
+     *                             this line will snap to.
+     *  @param rads       {number} The snapping thershold in radians.
+     */
     this.snap_to_guideline = function(guide_line, rads) {
         var diff = { x: m_point_a.x - m_point_b.x, 
                      y: m_point_a.y - m_point_b.y };
@@ -182,13 +249,31 @@ function Line() {
         }
         // make the snap
         var saved_mag = Vector.mag(diff);
-        var v = { x: guide_line.x, y: guide_line.y };
-        m_point_b = { x: -saved_mag*scalar*(v.x) + m_point_a.x,
-                      y: -saved_mag*scalar*(v.y) + m_point_a.y };
+        var to_other_point = { x: saved_mag*scalar*guide_line.x,
+                               y: saved_mag*scalar*guide_line.y };
+        
+        var comp_new_pt_b = function() {
+            return { x: -to_other_point.x + m_point_a.x,
+                     y: -to_other_point.y + m_point_a.y };
+        };
+        
+        if (m_control_points === undefined) {
+            // snap which ever point is being pulled in this case point b
+            m_point_b = comp_new_pt_b();
+        } else {
+            if (m_control_points.is_editing_point_a()) {
+                m_point_a = { x: to_other_point.x + m_point_b.x,
+                              y: to_other_point.y + m_point_b.y };;
+            } else if (m_control_points.is_editing_point_b()) {
+                m_point_b = comp_new_pt_b();
+            } else {
+                // both are being edited, therefore do no snapping
+            }
+            m_control_points.set_points(m_point_a, m_point_b);
+        }
+        
         $("#debug-message-1").text("snapped: " + 
-            Vector.to_string(diff) + " " + Vector.to_string(m_point_a) + " " +
-            saved_mag + " " + scalar + " " +
-            Vector.to_string(m_point_b)
+            Vector.to_string(diff) + " " + Vector.to_string(to_other_point)
         );
         
         return true;
@@ -198,14 +283,27 @@ function Line() {
                                   Line Editing
     **************************************************************************/
 
-    this.enable_editing = function()
-        { m_control_points = new LineControlPoints(m_point_a, m_point_b); }
-
-    this.update_editing = function(cursor_pos) {
-        if (m_control_points === undefined) return;
-        //var gv = m_control_points.up
+    this.enable_editing = function() { 
+        m_control_points = new LineControlPoints(m_point_a, m_point_b); 
+        m_handle_cursor_move_func  = handle_cursor_move_editing ;
+        m_handle_cursor_click_func = handle_cursor_click_editing;
+    }
+        
+    this.disable_editing = function() { 
+        m_control_points = undefined; 
+        m_handle_cursor_move_func  = function(c) {};
+        m_handle_cursor_click_func = function(c, p) { return false; };
     }
 
+    this.handle_cursor_move = function(cursor_pos) 
+        { m_handle_cursor_move_func(cursor_pos); }
+    
+    /**
+     *  @return Returns true if the click modified the object, false otherwise.
+     */
+    this.handle_cursor_click = function(cursor_pos, pressed) 
+        { return m_handle_cursor_click_func(cursor_pos, pressed); }
+    
     this.draw = function(context) {
         context.beginPath();
         context.moveTo(m_point_a.x, m_point_a.y);
@@ -231,15 +329,18 @@ function BarMenu() {
     }
     
     this.check_click = function(cursor) {
-        if (m_entries.length === 0) return;
-        if (m_entries[0].bounds === undefined) return;
+        if (m_entries.length === 0) return false;
+        if (m_entries[0].bounds === undefined) return false;
+        var rv = false;
         for_each(m_entries, function(entry) {
             // ... reinventing the wheel?
             if (Vector.in_bounds(cursor, entry.bounds)) {
                 entry.callback();
+                rv = true;
                 return true;
             }
         });
+        return rv;
     }
     
     // I wish I could do this with regular HTML elements, it would be soooo
@@ -293,26 +394,39 @@ function Model() {
     var m_click_was_held = false; // history
     var m_click_held = false;
 
-    var m_lines = [new Line()];
+    var m_lines = [];
     var m_guidelines = [{ x: 1, y: 0 }, { x: 0, y: 1 }, Vector.norm({ x: 3, y: 1 }) ];
     
     var m_bar_menu = new BarMenu();
+    var m_is_drawing = true;
     
-    m_bar_menu.push_entry("Enter Edit Mode", function(){});
-    m_bar_menu.push_entry("Enter Draw Mode", function(){});
+    m_bar_menu.push_entry("Edit", function() {
+        for_each(m_lines, function(line) {
+            line.enable_editing();
+        });
+        m_is_drawing = false;
+    });
+    
+    m_bar_menu.push_entry("Draw", function() {
+        for_each(m_lines, function(line) {
+            line.disable_editing();
+        });
+        m_is_drawing = true;
+    });
 
     this.set_location = function(loc) {
         assert_not_nan(loc.x); assert_not_nan(loc.y);
         m_cursor_location = loc;
-        // primative creation
-        if (m_click_held && m_click_was_held) {
-            array_last(m_lines).pull(m_cursor_location);
-        } else if (m_click_held && !m_click_was_held) {
-            array_last(m_lines).set_at(m_cursor_location);
-            array_last(m_lines).pull  (m_cursor_location);
-        } else if (!m_click_held && m_click_was_held) {
-            array_last(m_lines).enable_editing();
-            m_lines.push(new Line());
+        if (m_is_drawing) {
+            // primative creation
+            if (m_click_held && m_click_was_held) {
+                array_last(m_lines).pull(m_cursor_location);
+            } else if (m_click_held && !m_click_was_held) {
+                m_lines.push(new Line());
+                array_last(m_lines).set_at(m_cursor_location);
+            } else if (!m_click_held && m_click_was_held) {
+                
+            }
         }
     }
 
@@ -322,7 +436,10 @@ function Model() {
             m_cursor_velocity = zero_vect();
         }
         m_cursor_direction = dir;
-        //$("#debug-message").text("x: " + dir.x + " y: " + dir.y);
+        
+        for_each(m_lines, function(line) {
+            line.handle_cursor_move(m_cursor_location);
+        });
     }
 
     this.button = function(pressed) {
@@ -330,19 +447,31 @@ function Model() {
         // I have an idea how we can use this n.~
         if (!pressed && m_time_since_previous_click < 0.2) {
         }
-        if (pressed) {
-            m_bar_menu.check_click(m_cursor_location);
-        }
-
+        
         m_time_since_previous_click = 0;
+        
+        if (pressed) {
+            if (m_bar_menu.check_click(m_cursor_location))
+                return; // skip changes for update...
+        }
+        
         m_click_was_held = m_click_held;
         m_click_held     = pressed;
+    
+        for_each(m_lines, function(line) {
+            // kind of tricky, the for each loop breaks if true is returned
+            // line.handle_cursor_click returns true when the line has been
+            // modified by the event
+            line.handle_cursor_click(m_cursor_location, pressed);
+        });
     }
 
     this.update = function(et) {
         // primative creation
-        for (var i = 0; i < m_guidelines.length; ++i) {
-            array_last(m_lines).snap_to_guideline(m_guidelines[i], Math.PI/32);
+        if (m_lines.length !== 0) {
+            for_each(m_guidelines, function(guideline) {
+                array_last(m_lines).snap_to_guideline(guideline, Math.PI/32);
+            });
         }
         
         // for move controls
@@ -373,9 +502,8 @@ function Model() {
         var loc = m_cursor_location;
         view.fillRect(loc.x - size/2, loc.y - size/2, size, size);
 
-        for (var i = 0; i != m_lines.length; ++i) {
-            m_lines[i].draw(view);
-        }
+        for_each(m_lines, function(line) { line.draw(view); });
+
         m_bar_menu.draw(view);
     }
 }
@@ -461,7 +589,7 @@ function App() {
     var m_json_controller = undefined;//new JsonController();
     var m_controllers = [m_keyboard_controller, m_mouse_controller];
     var m_model = new Model();
-    var m_active_controller;
+
     var m_json_target;
     var m_update_counter = 0; // necessary for my machine
     var m_pause = false;
@@ -498,10 +626,9 @@ function App() {
      *  @param {Number} et Elapsed time in seconds.
      */
     function update(et) {
-        //m_active_controller.update_model(m_model, et);
-        for (var i = 0; i < m_controllers.length; ++i) {
-            m_controllers[i].update_model(m_model, et);
-        }
+        for_each(m_controllers, function(controller) {
+            controller.update_model(m_model, et);
+        });
         m_model.update(et);
     }
 
@@ -538,7 +665,7 @@ function App() {
         m_context = m_canvas.getContext("2d", { alpha: false, depth: false });
         // anything else to start up
         // ...
-        m_active_controller = m_json_controller;//m_mouse_controller;//m_keyboard_controller;
+
         // starts the app
         run();
     };
