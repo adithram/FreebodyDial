@@ -193,8 +193,8 @@ function Line() {
     var m_point_b = zero_vect();
     var m_control_points = undefined;
     
-    var m_handle_cursor_move_func  = function(c){};
-    var m_handle_cursor_click_func = function(c, p){ return false; };
+    var m_handle_cursor_move_func  = undefined;
+    var m_handle_cursor_click_func = undefined;
     
     var handle_cursor_move_editing = function(cursor_pos) {
         var gv = m_control_points.handle_cursor_move(cursor_pos);
@@ -272,10 +272,6 @@ function Line() {
             m_control_points.set_points(m_point_a, m_point_b);
         }
         
-        $("#debug-message-1").text("snapped: " + 
-            Vector.to_string(diff) + " " + Vector.to_string(to_other_point)
-        );
-        
         return true;
     }
         
@@ -294,6 +290,7 @@ function Line() {
         m_handle_cursor_move_func  = function(c) {};
         m_handle_cursor_click_func = function(c, p) { return false; };
     }
+    this.disable_editing();
 
     this.handle_cursor_move = function(cursor_pos) 
         { m_handle_cursor_move_func(cursor_pos); }
@@ -348,7 +345,7 @@ function BarMenu() {
     // this function DOES modify the state of the object
     this.draw = function(context) {
         var draw_position = deepcopy(m_location);
-        var debug_string = "";
+        
         m_size = zero_vect();
         context.font = "28px Arial";
         context.lineWidth = 1;
@@ -361,8 +358,6 @@ function BarMenu() {
             entry.bounds = { x    : draw_position.x, y     : draw_position.y,
                              width: entry_size.x   , height: entry_size.y    };
             
-            debug_string += "Where: " + Vector.to_string(draw_position) +
-                            " how big: " + Vector.to_string(entry_size) + "<br />";
             // draw box around entry
             context.beginPath();
             context.rect(draw_position.x, draw_position.y, entry_size.x, entry_size.y);
@@ -374,7 +369,113 @@ function BarMenu() {
             m_size.x += entry_size.x;
             draw_position.x += entry_size.x;
         });
-        $("#debug-message-2").text(debug_string);
+        
+    }
+}
+
+/** Not to be confused with the mouse cursor. The cursor is an abstraction; it 
+ *  is the point on screen which may receive click events. Its location may 
+ *  convey user will.
+ * 
+ *  It is not a 'controller' in the MVC sense either. Controllers do ultimately
+ *  modify it, but this object acts as a universal representation of user will.
+ * 
+ *  @note user will -> as in user will so far as we can ascertain from input 
+ *        json/mouse/keyboard or otherwise
+ */
+function Cursor() {
+    assert_new.check(this);
+    
+    var m_min_speed           = 200;
+    var m_max_dbl_click_delay = 0.1;
+    
+    var m_cursor_location  = zero_vect();
+    var m_cursor_direction = zero_vect();
+    var m_cursor_velocity  = zero_vect();
+    
+    var m_time_since_previous_click = 0;
+    var m_click_was_held = false; // history
+    var m_click_held = false;
+    
+    var m_location_change_event = function(){};
+    var m_just_clicked_event    = function(){};
+    var m_just_released_event   = function(){};
+    var m_click_held_event      = function(){};
+    var m_double_click_event    = function(){};
+    
+    var throw_if_param_not_func = function(func) {
+        if (!$.isFunction(func))
+            throw "func parameter must be a function";
+    }
+    
+    this.location = function() { return m_cursor_location; }
+    
+    this.is_pressed = function() { return m_click_held; }
+    
+    this.set_location = function(v) {
+        m_cursor_location = v;
+        if (m_location_change_event !== undefined)
+            m_location_change_event();
+    }
+    
+    this.move_in_direction = function(dir) {
+        m_cursor_direction = dir;
+    }
+    
+    this.set_pressed = function(pressed) {
+        m_click_was_held = m_click_held;
+        m_click_held     = pressed     ;
+        if (m_click_held && m_click_was_held) {
+            m_click_held_event();
+        } else if (m_click_held && !m_click_was_held) {
+            m_just_clicked_event();
+        } else if (!m_click_held && m_click_was_held) {
+            m_just_released_event();
+        }
+    }
+    
+    this.do_time_based_updates = function(et) {
+        // for move controls
+        var mul   = function(s, v) { return { x:s*v.x, y:s*v.y }; };
+        var add   = Vector.add;
+        var addeq = function(v, u) { v = Vector.add(v, u); };
+        var mag   = Vector.mag;
+        var norm  = Vector.norm;
+
+        if (mag(m_cursor_direction) !== 0) {
+            // perhaps add an accelerating cursor?
+            addeq(m_cursor_location, mul(m_min_speed*et, m_cursor_direction));
+            m_cursor_direction = zero_vect();
+            m_location_change_event();
+        }
+        
+        if (m_click_held && m_click_was_held)
+            m_click_held_event();
+    }
+    
+    this.set_location_change_event = function(func) { 
+        throw_if_param_not_func(func);
+        m_location_change_event = func; 
+    }
+    
+    this.set_just_clicked_event = function(func) {
+        throw_if_param_not_func(func);
+        m_just_clicked_event = func;
+    }
+    
+    this.set_click_held_event = function(func) {
+        throw_if_param_not_func(func);
+        m_click_held_event = func;
+    }
+    
+    this.set_just_released_event = function(func) {
+        throw_if_param_not_func(func);
+        m_just_released_event = func; 
+    }
+    
+    this.set_double_click_event = function(func) {
+        throw_if_param_not_func(func);
+        m_double_click_event = func;
     }
 }
 
@@ -383,6 +484,8 @@ function Model() {
 
     // We could in the future use state machine to seperate different modes for
     // this front end
+
+    var m_cursor = new Cursor();
 
     // cursor state
     var m_cursor_location  = zero_vect();
@@ -413,93 +516,76 @@ function Model() {
         });
         m_is_drawing = true;
     });
-
-    this.set_location = function(loc) {
-        assert_not_nan(loc.x); assert_not_nan(loc.y);
-        m_cursor_location = loc;
-        if (m_is_drawing) {
-            // primative creation
-            if (m_click_held && m_click_was_held) {
-                array_last(m_lines).pull(m_cursor_location);
-            } else if (m_click_held && !m_click_was_held) {
-                m_lines.push(new Line());
-                array_last(m_lines).set_at(m_cursor_location);
-            } else if (!m_click_held && m_click_was_held) {
-                
-            }
-        }
-    }
-
-    this.move = function(dir) {
-        if (dir.x === 0 && dir.y === 0) {
-            // STOP the cursor
-            m_cursor_velocity = zero_vect();
-        }
-        m_cursor_direction = dir;
-        
-        for_each(m_lines, function(line) {
-            line.handle_cursor_move(m_cursor_location);
-        });
-    }
-
-    this.button = function(pressed) {
-        // double click thershold
-        // I have an idea how we can use this n.~
-        if (!pressed && m_time_since_previous_click < 0.2) {
-        }
-        
-        m_time_since_previous_click = 0;
-        
-        if (pressed) {
-            if (m_bar_menu.check_click(m_cursor_location))
-                return; // skip changes for update...
-        }
-        
-        m_click_was_held = m_click_held;
-        m_click_held     = pressed;
     
-        for_each(m_lines, function(line) {
-            // kind of tricky, the for each loop breaks if true is returned
-            // line.handle_cursor_click returns true when the line has been
-            // modified by the event
-            line.handle_cursor_click(m_cursor_location, pressed);
+    m_cursor.set_just_clicked_event(function() {
+        m_bar_menu.check_click(m_cursor.location());
+        if (!m_is_drawing) return;
+        m_lines.push(new Line());
+        array_last(m_lines).set_at(m_cursor.location());
+    });
+    
+    m_cursor.set_just_released_event(function() {
+        $("#debug-message-2").text("released: " + Date.now());
+        if (m_lines.length === 0) return;
+        for_each(m_guidelines, function(guideline) {
+            array_last(m_lines).snap_to_guideline(guideline, Math.PI/32);
         });
-    }
-
-    this.update = function(et) {
-        // primative creation
+    });
+    
+    m_cursor.set_click_held_event(function() {
+        $("#debug-message-1").text("held: " + Date.now());
+        if (m_is_drawing) {
+            // this is a continuous 'event'
+            // it is called on each time based update iff the cursor was pressed 
+            // on this and the previous frame
+            array_last(m_lines).pull(m_cursor.location());
+        }
         if (m_lines.length !== 0) {
             for_each(m_guidelines, function(guideline) {
                 array_last(m_lines).snap_to_guideline(guideline, Math.PI/32);
             });
         }
-        
-        // for move controls
-        var mul   = function(s ,  v) { return { x:s*v.x    , y:s*v.y     }; };
-        var add   = function(v1, v2) { return { x:v1.x+v2.x, y:v1.y+v2.y }; };
-        var addeq = function(v ,  u) { v.x += u.x; v.y += u.y; };
-        var mag   = Vector.mag; //function(v)      { return Math.sqrt(v.x*v.x + v.y*v.y); }
-        var norm  = function(v) {
-            var mag_ = mag(v);
-            return { x: v.x/mag_, y: v.y/mag_ };
-        };
-
-        if (mag(m_cursor_direction) !== 0) {
-            //var acceleration = mul(500, m_cursor_direction);
-            //addeq(m_cursor_velocity, mul(et, acceleration));
-            //if (mag(m_cursor_velocity) < m_min_speed) {
-            //    m_cursor_velocity = mul(m_min_speed, norm(m_cursor_velocity));
-            //}
-            addeq(m_cursor_location, mul(m_min_speed*et, m_cursor_direction));
-            m_cursor_direction = zero_vect();
+    });
+    
+    m_cursor.set_location_change_event(function() {
+        for_each(m_lines, function(line) {
+            line.handle_cursor_move(m_cursor.location());
+        });
+        if (m_lines.length !== 0) {
+            for_each(m_guidelines, function(guideline) {
+                array_last(m_lines).snap_to_guideline(guideline, Math.PI/32);
+            });
         }
-        m_time_since_previous_click += et;
+        for_each(m_lines, function(line) {
+            // kind of tricky, the for each loop breaks if true is returned
+            // line.handle_cursor_click returns true when the line has been
+            // modified by the event
+            line.handle_cursor_click(m_cursor.location(), m_cursor.is_pressed());
+        });
+        
+    });
+    
+    this.set_location = function(loc) {
+        assert_not_nan(loc.x); assert_not_nan(loc.y);
+        m_cursor.set_location(loc);
+    }
+
+    this.move = function(dir) {
+        m_cursor.move_in_direction(dir);
+    }
+
+    this.button = function(pressed) {
+        m_cursor.set_pressed(pressed);
+    }
+
+    this.update = function(et) {
+        m_cursor.do_time_based_updates(et);
     }
     this.render_to = function(view) {
         // view is a draw context object
         view.fillStyle = "#000";
         var size = 10;
-        var loc = m_cursor_location;
+        var loc = m_cursor.location();
         view.fillRect(loc.x - size/2, loc.y - size/2, size, size);
 
         for_each(m_lines, function(line) { line.draw(view); });
