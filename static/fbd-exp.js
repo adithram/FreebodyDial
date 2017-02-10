@@ -40,6 +40,12 @@ var Vector = {
     in_bounds : function(v, bounds) {
         return v.x > bounds.x && v.x < bounds.x + bounds.width &&
                v.y > bounds.y && v.y < bounds.y + bounds.height;
+    },
+    bounds_around : function(point, size_vect) {
+        return { x: point.x - size_vect.x/2, 
+                 y: point.y - size_vect.y/2,
+                 width : size_vect.x, 
+                 height: size_vect.y };
     }
 }
 
@@ -78,10 +84,7 @@ function LineControlPoints(point_a, point_b) {
     var m_update_control_point_func = undefined;
     
     function bounds_around(point) {
-        return { x: point.x - m_point_size/2, 
-                 y: point.y - m_point_size/2,
-                 width : m_point_size, 
-                 height: m_point_size };
+        return Vector.bounds_around(point, { x: m_point_size, y: m_point_size });
     }
     
     function avg_vect(u, v) {
@@ -482,26 +485,13 @@ function Cursor() {
 function Model() {
     assert_new.check(this);
 
-    // We could in the future use state machine to seperate different modes for
-    // this front end
-
-    var m_cursor = new Cursor();
-
-    // cursor state
-    var m_cursor_location  = zero_vect();
-    var m_cursor_direction = zero_vect();
-    var m_cursor_velocity  = zero_vect();
-    var m_min_speed        = 200;
-
-    var m_time_since_previous_click = 0;
-    var m_click_was_held = false; // history
-    var m_click_held = false;
-
     var m_lines = [];
     var m_guidelines = [{ x: 1, y: 0 }, { x: 0, y: 1 }, Vector.norm({ x: 3, y: 1 }) ];
     
     var m_bar_menu = new BarMenu();
     var m_is_drawing = true;
+    
+    var m_cursor_box = undefined;
     
     m_bar_menu.push_entry("Edit", function() {
         for_each(m_lines, function(line) {
@@ -517,76 +507,62 @@ function Model() {
         m_is_drawing = true;
     });
     
-    m_cursor.set_just_clicked_event(function() {
-        m_bar_menu.check_click(m_cursor.location());
-        if (!m_is_drawing) return;
-        m_lines.push(new Line());
-        array_last(m_lines).set_at(m_cursor.location());
-    });
-    
-    m_cursor.set_just_released_event(function() {
-        $("#debug-message-2").text("released: " + Date.now());
-        if (m_lines.length === 0) return;
-        for_each(m_guidelines, function(guideline) {
-            array_last(m_lines).snap_to_guideline(guideline, Math.PI/32);
-        });
-    });
-    
-    m_cursor.set_click_held_event(function() {
-        $("#debug-message-1").text("held: " + Date.now());
-        if (m_is_drawing) {
-            // this is a continuous 'event'
-            // it is called on each time based update iff the cursor was pressed 
-            // on this and the previous frame
-            array_last(m_lines).pull(m_cursor.location());
-        }
-        if (m_lines.length !== 0) {
-            for_each(m_guidelines, function(guideline) {
-                array_last(m_lines).snap_to_guideline(guideline, Math.PI/32);
-            });
-        }
-    });
-    
-    m_cursor.set_location_change_event(function() {
-        for_each(m_lines, function(line) {
-            line.handle_cursor_move(m_cursor.location());
-        });
-        if (m_lines.length !== 0) {
-            for_each(m_guidelines, function(guideline) {
-                array_last(m_lines).snap_to_guideline(guideline, Math.PI/32);
-            });
-        }
-        for_each(m_lines, function(line) {
-            // kind of tricky, the for each loop breaks if true is returned
-            // line.handle_cursor_click returns true when the line has been
-            // modified by the event
-            line.handle_cursor_click(m_cursor.location(), m_cursor.is_pressed());
+    this.change_to_draw_mode = function(cursor) {
+        
+        cursor.set_just_clicked_event(function() {
+            m_bar_menu.check_click(cursor.location());
+            if (!m_is_drawing) return;
+            m_lines.push(new Line());
+            array_last(m_lines).set_at(cursor.location());
         });
         
-    });
+        cursor.set_just_released_event(function() {
+            if (m_lines.length === 0) return;
+            for_each(m_guidelines, function(guideline) {
+                array_last(m_lines).snap_to_guideline(guideline, Math.PI/32);
+            });
+        });
+        
+        cursor.set_click_held_event(function() {
+            if (m_is_drawing) {
+                // this is a continuous 'event'
+                // it is called on each time based update iff the cursor was 
+                // pressed on this and the previous frame
+                array_last(m_lines).pull(cursor.location());
+            }
+            if (m_lines.length !== 0) {
+                for_each(m_guidelines, function(guideline) {
+                    array_last(m_lines).snap_to_guideline(guideline, Math.PI/32);
+                });
+            }
+        });
+        
+        cursor.set_location_change_event(function() {
+            m_cursor_box = Vector.bounds_around
+                (cursor.location(), { x: 10, y: 10 });
+            for_each(m_lines, function(line) {
+                line.handle_cursor_move(cursor.location());
+            });
+            if (m_lines.length !== 0) {
+                for_each(m_guidelines, function(guideline) {
+                    array_last(m_lines).snap_to_guideline(guideline, Math.PI/32);
+                });
+            }
+            for_each(m_lines, function(line) {
+                // kind of tricky, the for each loop breaks if true is returned
+                // line.handle_cursor_click returns true when the line has been
+                // modified by the event
+                line.handle_cursor_click(cursor.location(), cursor.is_pressed());
+            });
+        });
+    }
+
     
-    this.set_location = function(loc) {
-        assert_not_nan(loc.x); assert_not_nan(loc.y);
-        m_cursor.set_location(loc);
-    }
-
-    this.move = function(dir) {
-        m_cursor.move_in_direction(dir);
-    }
-
-    this.button = function(pressed) {
-        m_cursor.set_pressed(pressed);
-    }
-
-    this.update = function(et) {
-        m_cursor.do_time_based_updates(et);
-    }
     this.render_to = function(view) {
         // view is a draw context object
         view.fillStyle = "#000";
-        var size = 10;
-        var loc = m_cursor.location();
-        view.fillRect(loc.x - size/2, loc.y - size/2, size, size);
+        view.fillRect(m_cursor_box.x    , m_cursor_box.y,
+                      m_cursor_box.width, m_cursor_box.height);
 
         for_each(m_lines, function(line) { line.draw(view); });
 
@@ -594,10 +570,11 @@ function Model() {
     }
 }
 
+
 function KeyboardController() {
     assert_new.check(this);
     var m_keys_down = {};
-    this.update_model = function(model, et) {
+    this.update_cursor = function(cursor, et) {
         var x_dir = 0;
         var y_dir = 0;
         if (37 in m_keys_down) { // left
@@ -615,7 +592,7 @@ function KeyboardController() {
             x_dir /= Math.sqrt(2);
             y_dir /= Math.sqrt(2);
         }
-        model.move({ x : x_dir, y : y_dir });
+        cursor.move_in_direction({ x : x_dir, y : y_dir });
     }
     this.update_key_press = function(keycode)
         { m_keys_down[keycode] = true; }
@@ -632,9 +609,9 @@ function MouseController() {
         loc.y -= 10;
         m_mouse_location = loc;
     }
-    this.update_model = function(model, et) {
-        model.button      (m_mouse_pressed );
-        model.set_location(m_mouse_location);
+    this.update_cursor = function(cursor, et) {
+        cursor.set_pressed (m_mouse_pressed );
+        cursor.set_location(m_mouse_location);
     }
     this.mouse_click = function(pressed) {
         m_mouse_pressed = pressed;
@@ -655,9 +632,9 @@ function JsonController() {
         if (obj.click_held !== undefined)
             m_click = obj.click_held;
     }
-    this.update_model = function(model, et) {
-        model.button(m_click    );
-        model.move  (m_direction);
+    this.update_cursor = function(cursor, et) {
+        cursor.set_pressed      (m_click    );
+        cursor.move_in_direction(m_direction);
     }
 }
 
@@ -675,6 +652,9 @@ function App() {
     var m_json_controller = undefined;//new JsonController();
     var m_controllers = [m_keyboard_controller, m_mouse_controller];
     var m_model = new Model();
+    
+    // "Backend" controller
+    var m_cursor = new Cursor();
 
     var m_json_target;
     var m_update_counter = 0; // necessary for my machine
@@ -713,9 +693,9 @@ function App() {
      */
     function update(et) {
         for_each(m_controllers, function(controller) {
-            controller.update_model(m_model, et);
+            controller.update_cursor(m_cursor, et);
         });
-        m_model.update(et);
+        m_cursor.do_time_based_updates(et);
     }
 
     function render() {
@@ -750,8 +730,8 @@ function App() {
         m_canvas  = document.getElementById(html_id_str);
         m_context = m_canvas.getContext("2d", { alpha: false, depth: false });
         // anything else to start up
-        // ...
 
+        m_model.change_to_draw_mode(m_cursor);
         // starts the app
         run();
     };
