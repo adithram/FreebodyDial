@@ -9,6 +9,7 @@ app = Flask(__name__, template_folder='templates')
 # Register the controllers
 app.register_blueprint(controllers.main)
 
+app.secret_key = "\x94W\xc0,\x98\xe4\x80\xb6\xc2Q\xbc\xf6\xbb^\x14hx\x9fj\x11\x18(\xb8B"
 
 
 
