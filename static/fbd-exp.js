@@ -1,3 +1,13 @@
+/*******************************************************************************
+ * 
+ * Notes on Reading:
+ * 
+ * JavaScript has no notion of 'forwarding', therefore it maybe better to read
+ * the source file from the bottom up. That is from the last "Object 
+ * declatation" to the first and then utils.
+ * 
+ ******************************************************************************/
+
 "use strict";
 
 // on reflection: I perhaps should've used a geometry library as opposed to 
@@ -16,6 +26,39 @@ Object.freeze(assert_new);
 function assert_not_nan(f) { if (f != f) throw "Nan!"; }
 
 function array_last(arr) { return arr[arr.length - 1]; }
+
+function array_clean(arr) {
+    var rv = [];
+    for_each(arr, function(entry) {
+        if (entry)
+            rv.push(entry);
+    });
+    return rv;
+};
+
+function array_trim(arr, condition) {
+    var modify_array = function(arr) { return arr };
+    for (var i = 0; i < arr.length; ++i) {
+        if (condition(arr[i])) {
+            delete arr[i];
+            modify_array = array_clean;
+        }
+    }
+    return modify_array(arr);
+}
+
+function array_trim_first(arr, condition) {
+    // DRY violation, but how can I cleanly avoid this here?
+    var modify_array = function(arr) { return arr };
+    for (var i = 0; i < arr.length; ++i) {
+        if (condition(arr[i])) {
+            delete arr[i];
+            modify_array = array_clean;
+            break;
+        }
+    }
+    return modify_array(arr);
+}
 
 var Vector = {
     mag : function(v) {
@@ -46,7 +89,8 @@ var Vector = {
                  y: point.y - size_vect.y/2,
                  width : size_vect.x, 
                  height: size_vect.y };
-    }
+    },
+    distance : function(u, v) { return this.mag(this.sub(u, v)); }
 }
 
 Object.freeze(Vector);
@@ -56,6 +100,16 @@ var g_this = this;
 function zero_vect() { return { x: 0, y: 0 }; }
 
 function deepcopy(obj) { return $.extend(true, {}, obj); }
+
+function draw_bounds_as_black_outlined_box(context, cp_bounds, fill_color) {
+    context.beginPath();
+    context.rect(cp_bounds.x, cp_bounds.y, cp_bounds.width, cp_bounds.height);
+    context.fillStyle = fill_color;
+    context.fill();
+    context.lineWidth = 1;
+    context.strokeStyle = 'black';
+    context.stroke();
+}
 
 function for_each(array, callback) {
     for (var i = 0; i < array.length; ++i) {
@@ -68,12 +122,11 @@ function for_each(array, callback) {
 }
 
 /** The set of small boxes, which allows the user to edit a Line primative.
+ *  It can also be used to merely highlight a line (for now).
  *  @note This type is not meant to be used with any other expect for Line.
  */
 function LineControlPoints(point_a, point_b) {
     assert_new.check(this);
-    
-    var m_point_size = 10;
     
     // style note: these "declarations" doesn't create any members,
     //             this is more of an FYI: "these are the names for these
@@ -83,8 +136,10 @@ function LineControlPoints(point_a, point_b) {
     var m_move_whole_line = undefined;
     var m_update_control_point_func = undefined;
     
+    function point_size() { return 10.0; }
+    
     function bounds_around(point) {
-        return Vector.bounds_around(point, { x: m_point_size, y: m_point_size });
+        return Vector.bounds_around(point, { x: point_size(), y: point_size() });
     }
     
     function avg_vect(u, v) {
@@ -92,13 +147,7 @@ function LineControlPoints(point_a, point_b) {
     }
     
     function draw_point_bounds(context, cp_bounds, fill_color) {
-        context.beginPath();
-        context.rect(cp_bounds.x, cp_bounds.y, cp_bounds.width, cp_bounds.height);
-        context.fillStyle = fill_color;
-        context.fill();
-        context.lineWidth = 1;
-        context.strokeStyle = 'black';
-        context.stroke();
+        draw_bounds_as_black_outlined_box(context, cp_bounds, fill_color);
     }
     
     var update_point_a = function(cursor_pos) {
@@ -186,6 +235,10 @@ function LineControlPoints(point_a, point_b) {
 // though there is risk of crowding the interface
 
 /** A Line is a diagram primative.
+ * 
+ *  The interface has creation/editing functions.
+ *  Soon to be grouping functions, is there a way to prevent the interface
+ *  from becoming too bloated?
  *  @note client code should not concern itself with what is "point a" and what
  *        is "point b".
  */
@@ -283,20 +336,50 @@ function Line() {
     **************************************************************************/
 
     this.enable_editing = function() { 
-        m_control_points = new LineControlPoints(m_point_a, m_point_b); 
+        this.show_control_points();
         m_handle_cursor_move_func  = handle_cursor_move_editing ;
         m_handle_cursor_click_func = handle_cursor_click_editing;
     }
-        
+    
     this.disable_editing = function() { 
         m_control_points = undefined; 
         m_handle_cursor_move_func  = function(c) {};
         m_handle_cursor_click_func = function(c, p) { return false; };
     }
     this.disable_editing();
+    
+    this.show_control_points = function() {
+        m_control_points = new LineControlPoints(m_point_a, m_point_b); 
+    }
+    
+    this.hide_control_points = function() 
+        { this.disable_editing(); }
 
     this.handle_cursor_move = function(cursor_pos) 
         { m_handle_cursor_move_func(cursor_pos); }
+    
+    this.explode = function() { return this; }
+    
+    this.point_within = function(point, distance_limit) {
+        // Geometry, derived from mathematics:
+        // https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
+        if (distance_limit === undefined)
+            throw "distance_limit must be defined";
+        
+        var a = m_point_a;
+        var b = m_point_b;
+        var c = point;
+        var xs_diff_sq = (a.x - b.x)*(a.x - b.x);
+        var ys_diff_sq = (a.y - b.y)*(a.y - b.y);
+        
+        // Prevent NaN
+        if (xs_diff_sq === 0 && ys_diff_sq === 0)
+            return Vector.distance(c, a) <= distance_limit; 
+        
+        var dist = Math.abs((b.y - a.y)*c.x - (b.x - a.x)*c.y + b.x*a.y - b.y*a.x)/
+                   Math.sqrt(xs_diff_sq + ys_diff_sq);
+        return (dist <= distance_limit);
+    }
     
     /**
      *  @return Returns true if the click modified the object, false otherwise.
@@ -314,8 +397,105 @@ function Line() {
         if (m_control_points !== undefined)
             m_control_points.draw(context);
     }
+    
+    this.bounds = function() { 
+        var x_ = Math.min(m_point_a.x, m_point_b.x);
+        var y_ = Math.min(m_point_a.y, m_point_b.y);
+        return { x: x_, y: y_, 
+                 width : Math.abs(m_point_a.x - m_point_b.x),
+                 height: Math.abs(m_point_a.y - m_point_b.y) };
+    }
 }
 
+function RectangularControlPoints(top_left, bottom_right) {
+    assert_new.check(this);
+    
+    var m_bounds_points = [top_left    , { x: bottom_right.x, y: top_left.y },
+                           bottom_right, { x: top_left.x, y: bottom_right.y }];
+    var m_move_point = { x: (top_left.x + bottom_right.x)/2,
+                         y: (top_left.y + bottom_right.y)/2 };
+    
+    function point_size() { return 10.0; }
+    
+    function bounds_around(point) {
+        return Vector.bounds_around(point, { x: point_size(), y: point_size() });
+    }
+    function draw_bounds(context, cp_bounds, fill_color) {
+        draw_bounds_as_black_outlined_box(context, cp_bounds, fill_color);
+    }
+    this.draw = function(context) {
+        for_each(m_bounds_points, function(bounds_point) {
+            draw_bounds(context, bounds_around(bounds_point), 'yellow');
+        });
+        draw_bounds(context, bounds_around(m_move_point), 'blue');
+    }
+}
+
+function Group(sub_items) {
+    assert_new.check(this);
+    
+    var m_sub_items      = sub_items;
+    var m_top_left       = undefined;
+    var m_bottom_right   = undefined;
+    var m_control_points = undefined;
+    
+    var for_init_compute_bounds_around_array = function(items) {
+        var top_left_most     = { x:  Infinity, y:  Infinity };
+        var bottom_right_most = { x: -Infinity, y: -Infinity };
+        for_each(items, function(item) {
+            var bounds_ = item.bounds();
+            top_left_most.x = Math.min(top_left_most.x, bounds_.x);
+            top_left_most.y = Math.min(top_left_most.y, bounds_.y);
+            var right = bounds_.x + bounds_.width;
+            var bottom = bounds_.y + bounds_.height;
+            bottom_right_most.x = Math.max(bottom_right_most.x, right );
+            bottom_right_most.y = Math.max(bottom_right_most.y, bottom);
+        });
+        m_top_left     = top_left_most;
+        m_bottom_right = bottom_right_most;
+    }
+    for_init_compute_bounds_around_array(sub_items);
+    for_init_compute_bounds_around_array = undefined;
+    
+    this.show_control_points = function() {
+        m_control_points = 
+            new RectangularControlPoints(m_top_left, m_bottom_right);
+    }
+    
+    this.hide_control_points = function() {
+        m_control_points = undefined;
+    }
+    
+    this.point_within = function(point, distance_limit) {
+        if (Vector.in_bounds(point, this.bounds())) return true;
+        var dist = Math.min( Math.abs(m_top_left.x     - point.x),
+                             Math.abs(m_top_left.y     - point.y),
+                             Math.abs(m_bottom_right.x - point.x),
+                             Math.abs(m_bottom_right.x - point.x) );
+        return (dist <= distance_limit);
+    }
+    
+    this.explode = function() {
+        return m_sub_items;
+    }
+    
+    this.draw = function(context) { 
+        for_each(m_sub_items, function(item) { item.draw(context); });
+        if (m_control_points === undefined) return;
+        m_control_points.draw(context);
+    }
+    
+    this.bounds = function() {
+        return { x: m_top_left.x, y: m_top_left.y,
+                 width : m_bottom_right.x - m_top_left.x,
+                 height: m_bottom_right.y - m_top_left.y };
+    }
+}
+
+/** Represents a 'quick and dirty' menu. For prototyping purposes. Hopefully
+ *  we can use HTML to create a more professional interface.
+ * 
+ */
 function BarMenu() {
     assert_new.check(this);
     
@@ -376,12 +556,13 @@ function BarMenu() {
     }
 }
 
-/** Not to be confused with the mouse cursor. The cursor is an abstraction; it 
+/** The 'Cursor' Object is the actual Controller (due for renaming?). Other 
+ *  'controllers' keep track of events that occur in the program, and then 
+ *  updates this object.
+ * 
+ *  Not to be confused with the mouse cursor. The cursor is an abstraction; it 
  *  is the point on screen which may receive click events. Its location may 
  *  convey user will.
- * 
- *  It is not a 'controller' in the MVC sense either. Controllers do ultimately
- *  modify it, but this object acts as a universal representation of user will.
  * 
  *  @note user will -> as in user will so far as we can ascertain from input 
  *        json/mouse/keyboard or otherwise
@@ -400,11 +581,11 @@ function Cursor() {
     var m_click_was_held = false; // history
     var m_click_held = false;
     
-    var m_location_change_event = function(){};
-    var m_just_clicked_event    = function(){};
-    var m_just_released_event   = function(){};
-    var m_click_held_event      = function(){};
-    var m_double_click_event    = function(){};
+    var m_location_change_event = undefined;
+    var m_just_clicked_event    = undefined;
+    var m_just_released_event   = undefined;
+    var m_click_held_event      = undefined;
+    var m_double_click_event    = undefined;
     
     var throw_if_param_not_func = function(func) {
         if (!$.isFunction(func))
@@ -456,6 +637,15 @@ function Cursor() {
             m_click_held_event();
     }
     
+    this.reset_events = function() {
+        m_location_change_event = function(){};
+        m_just_clicked_event    = function(){};
+        m_just_released_event   = function(){};
+        m_click_held_event      = function(){};
+        m_double_click_event    = function(){};
+    }
+    this.reset_events();
+    
     this.set_location_change_event = function(func) { 
         throw_if_param_not_func(func);
         m_location_change_event = func; 
@@ -482,8 +672,19 @@ function Cursor() {
     }
 }
 
-function Model() {
+/** The 'M' in MVC; represents the program's state.
+ *  
+ *  Right now the program is comprised only of lines, a menu, and hopefully 
+ *  soon groups.
+ * 
+ *  @note Implementing an undo feature maybe tricky, perhaps we could use 
+ *        function closures to represent the inverse of user actions, and stack
+ *        them onto an Array, and pop and execute as needed.
+ */
+function Model(cursor) {
     assert_new.check(this);
+
+    var m_cursor_ref = cursor;
 
     var m_lines = [];
     var m_guidelines = [{ x: 1, y: 0 }, { x: 0, y: 1 }, Vector.norm({ x: 3, y: 1 }) ];
@@ -492,12 +693,15 @@ function Model() {
     var m_is_drawing = true;
     
     var m_cursor_box = undefined;
+    var self = this;
     
     m_bar_menu.push_entry("Edit", function() {
         for_each(m_lines, function(line) {
             line.enable_editing();
         });
         m_is_drawing = false;
+        console.log("edit");
+        self.change_to_draw_mode(m_cursor_ref);
     });
     
     m_bar_menu.push_entry("Draw", function() {
@@ -505,6 +709,84 @@ function Model() {
             line.disable_editing();
         });
         m_is_drawing = true;
+        console.log("draw");
+        self.change_to_draw_mode(m_cursor_ref);
+    });
+    
+    var m_candidate_group = undefined;
+    var m_groups = [];
+    m_bar_menu.push_entry("Group", function() {
+        var cursor = m_cursor_ref;
+        m_candidate_group = [];
+        cursor.reset_events();
+        cursor.set_just_released_event(function() {
+            m_bar_menu.check_click(cursor.location());
+            // uniform interface, perhaps there should only be one array for 
+            // the model?
+            // DRY violation
+            m_lines = array_trim_first(m_lines, function(line) {
+                var rv = undefined;
+                if ( (rv = line.point_within(cursor.location(), 10)) ) {
+                    line.show_control_points();
+                    m_candidate_group.push(line);
+                }
+                return rv;
+            });
+            m_groups = array_trim_first(m_groups, function(group) {
+                var rv = undefined;
+                if ( (rv = group.point_within(cursor.location(), 10)) ) {
+                    group.show_control_points();
+                    m_candidate_group.push(group);
+                }
+                return rv;
+            });
+        });
+    });
+    
+    m_bar_menu.push_entry("Ungroup", function() {
+        var cursor = m_cursor_ref;
+        // ass convuluted...
+        if (m_candidate_group !== undefined) {
+            m_groups.push(new Group(m_candidate_group));
+            m_candidate_group = undefined;
+        }
+        cursor.reset_events();
+        cursor.set_just_released_event(function() {
+            m_bar_menu.check_click(cursor.location());
+            // again another DRY violation
+            // however this is a POC for this 'uniform' interface 
+            // (no not really inheritance, yes closer to concepts)
+            var ungrouped_items = undefined;
+            var handle_ungrouped_items = function(items) {
+                if (Array.isArray(items)) {
+                    // this is why I want just one primatives array
+                    for_each(items, function(item) {
+                        if (item instanceof Line)
+                            m_lines.push(item);
+                        else
+                            m_groups.push(item);
+                    });
+                } else {
+                    var item = items; // items, there is actually one (a Line)
+                    m_lines.push(item);
+                }
+            };
+            m_lines = array_trim_first(m_lines, function(line) {
+                var rv = undefined;
+                if ( (rv = line.point_within(cursor.location(), 10)) )
+                    ungrouped_items = line.explode();
+                return rv;
+            });
+            handle_ungrouped_items(ungrouped_items);
+            m_groups = array_trim_first(m_groups, function(group) {
+                var rv = undefined;
+                if ( (rv = line.point_within(cursor.location(), 10)) )
+                    ungrouped_items = group.explode();
+                return rv;
+            });
+            handle_ungrouped_items(ungrouped_items);
+        });
+        
     });
     
     this.change_to_draw_mode = function(cursor) {
@@ -520,6 +802,11 @@ function Model() {
             if (m_lines.length === 0) return;
             for_each(m_guidelines, function(guideline) {
                 array_last(m_lines).snap_to_guideline(guideline, Math.PI/32);
+            });
+            
+            m_lines = array_trim(m_lines, function(line) {
+                var bounds = line.bounds();
+                return (bounds.width < 10.0 && bounds.height < 10.0);
             });
         });
         
@@ -540,6 +827,7 @@ function Model() {
         cursor.set_location_change_event(function() {
             m_cursor_box = Vector.bounds_around
                 (cursor.location(), { x: 10, y: 10 });
+            
             for_each(m_lines, function(line) {
                 line.handle_cursor_move(cursor.location());
             });
@@ -565,6 +853,9 @@ function Model() {
                       m_cursor_box.width, m_cursor_box.height);
 
         for_each(m_lines, function(line) { line.draw(view); });
+        if (m_candidate_group !== undefined) {
+            for_each(m_candidate_group, function(primitive) { primitive.draw(view); });
+        }
 
         m_bar_menu.draw(view);
     }
@@ -618,6 +909,9 @@ function MouseController() {
     }
 }
 
+/** The JSON controller (due for renaming?), 
+ * 
+ */
 function JsonController() {
     assert_new.check(this);
     var m_direction = zero_vect();
@@ -638,6 +932,18 @@ function JsonController() {
     }
 }
 
+/** The App Object represents the entire MVC as a single object.
+ *  This object maps JavaScript events to their respective controllers, which
+ *  manipulate the state.
+ * 
+ *  The App has two self-perpetuating events. The update/frame time event. This
+ *  currently occurs every 50ms, and can be configured as needed. The JSON 
+ *  listener (currently disabled) will query a path on the server looking for
+ *  input information. This JSON object indicates a state change (not the 
+ *  current state) of the dial control. So, an empty body will mean 'no change',
+ *  where as a JSON object defining only x, would mean that the user has 
+ *  changed the dial's x axis only.
+ */
 function App() {
     assert_new.check(this);
 
@@ -651,10 +957,11 @@ function App() {
     var m_mouse_controller = new MouseController();
     var m_json_controller = undefined;//new JsonController();
     var m_controllers = [m_keyboard_controller, m_mouse_controller];
-    var m_model = new Model();
+    
     
     // "Backend" controller
     var m_cursor = new Cursor();
+    var m_model = new Model(m_cursor);
 
     var m_json_target;
     var m_update_counter = 0; // necessary for my machine
