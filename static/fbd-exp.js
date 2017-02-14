@@ -681,12 +681,26 @@ function Cursor() {
  *        function closures to represent the inverse of user actions, and stack
  *        them onto an Array, and pop and execute as needed.
  */
+
+ /* --------- UNDO FUNCTION --------- */
+// Potentially use sessions, stored as a list, to save previous user actions?
+/*
+1) User clicks on location to indicate line start point
+2) User releases mouse to indicate line end point
+3) Line stored in m_lines
+4) All lines in m_lines rendered
+
+In order to emulate the undo function...
+1) Decrease the list size by 1? 
+2) Re-render? 
+*/
 function Model(cursor) {
     assert_new.check(this);
 
     var m_cursor_ref = cursor;
 
     var m_lines = [];
+    var last_undone_line = new Line();
     var m_guidelines = [{ x: 1, y: 0 }, { x: 0, y: 1 }, Vector.norm({ x: 3, y: 1 }) ];
     
     var m_bar_menu = new BarMenu();
@@ -788,6 +802,19 @@ function Model(cursor) {
         });
         
     });
+
+    m_bar_menu.push_entry("Undo", function(){
+        console.log("Undo!");
+        // Remove the latest line added to m_lines
+        last_undone_line = m_lines[m_lines.length-1];
+        m_lines.pop();
+    });
+
+    /*m_bar_menu.push_entry("Redo", function(){
+        console.log("Redo");
+        m_lines.push(last_undone_line);
+        last_undone_line = new Line();
+    });*/
     
     this.change_to_draw_mode = function(cursor) {
         
