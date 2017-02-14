@@ -9,3 +9,6 @@ static/images/*
 static/.DS_Store
 sftp-config.json
 Vagrantfile
+vagrant.sh
+requirements.txt
+
