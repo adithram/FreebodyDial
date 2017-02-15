@@ -13,6 +13,7 @@
 // on reflection: I perhaps should've used a geometry library as opposed to 
 //                reinventing the wheel, and wasting time
 
+// function ensuring that "this" is indeed a new object
 var assert_new = {
     global_this : this,
     check : function(this_) {
@@ -21,12 +22,16 @@ var assert_new = {
     }
 };
 
+// ensure that no changes are made to assert_new?
 Object.freeze(assert_new);
 
+// 
 function assert_not_nan(f) { if (f != f) throw "Nan!"; }
 
+// returns the last element in the array
 function array_last(arr) { return arr[arr.length - 1]; }
 
+// Uncertain of function's purpose...
 function array_clean(arr) {
     var rv = [];
     for_each(arr, function(entry) {
@@ -36,6 +41,8 @@ function array_clean(arr) {
     return rv;
 };
 
+// Using condition, remove the elements in the array arr that 
+// match the condition
 function array_trim(arr, condition) {
     var modify_array = function(arr) { return arr };
     for (var i = 0; i < arr.length; ++i) {
@@ -47,6 +54,8 @@ function array_trim(arr, condition) {
     return modify_array(arr);
 }
 
+// Using condition, remove the FIRST element in the array arr that
+// matches the conditions
 function array_trim_first(arr, condition) {
     // DRY violation, but how can I cleanly avoid this here?
     var modify_array = function(arr) { return arr };
@@ -60,26 +69,42 @@ function array_trim_first(arr, condition) {
     return modify_array(arr);
 }
 
+// "array" of commonly used vector functions to be used by 
+// various objects and functions below
 var Vector = {
+
+    // Calculate and return the magnitude of the vector v
     mag : function(v) {
         return Math.sqrt(v.x*v.x + v.y*v.y);
     },
+
+    // Calculate and return the angle between 2 vectors u and v
     angle_between : function(u, v) {
         var dot_prod = u.x*v.x + u.y*v.y;
         return Math.acos(dot_prod/(this.mag(u)*this.mag(v)));
     },
+
+    // return string representation of the vector
     to_string : function(v) {
         return "(x: " + v.x + " y: " + v.y + " )";
     },
+
+    // return the normal value of the vector
     norm : function(v) {
         return { x: v.x/this.mag(v), y: v.y/this.mag(v) };
     },
+
+    // vector addition
     add : function(v, u) {
         return { x: v.x + u.x, y: v.y + u.y };
     },
+
+    // vector subtraction
     sub : function(v, u) {
         return { x: v.x - u.x, y: v.y - u.y };
     },
+
+    // 
     in_bounds : function(v, bounds) {
         return v.x > bounds.x && v.x < bounds.x + bounds.width &&
                v.y > bounds.y && v.y < bounds.y + bounds.height;
@@ -93,6 +118,7 @@ var Vector = {
     distance : function(u, v) { return this.mag(this.sub(u, v)); }
 }
 
+// Prevent any changes made to Vector
 Object.freeze(Vector);
 
 var g_this = this;
@@ -879,11 +905,17 @@ function Model(cursor) {
         view.fillRect(m_cursor_box.x    , m_cursor_box.y,
                       m_cursor_box.width, m_cursor_box.height);
 
+        // Iterate through m_lines and draw each line in the list
         for_each(m_lines, function(line) { line.draw(view); });
+
+        // GROUP FUNCTIONALITY!
+        // If there is a group defined, iterate through the lines contained
+        // in that group and draw them altogether
         if (m_candidate_group !== undefined) {
             for_each(m_candidate_group, function(primitive) { primitive.draw(view); });
         }
 
+        // Draw the bar menu located at the top of the html page when rendered
         m_bar_menu.draw(view);
     }
 }
@@ -978,8 +1010,16 @@ function App() {
                                   Private Members
     **************************************************************************/
     var m_context;
+
+    // representation of the 640x480 canvas in canvas.html on line 28
     var m_canvas;
+
+    // m_time_then, used as base reference point in time when App is first initialized
+    // used for calculating update time 
     var m_time_then = Date.now();
+
+    // "Frontend" controllers to read user input via mouse or keyboard
+    // NOTE: Translated into JSON via m_json_controller
     var m_keyboard_controller = new KeyboardController();
     var m_mouse_controller = new MouseController();
     var m_json_controller = undefined;//new JsonController();
@@ -998,7 +1038,11 @@ function App() {
                                   Private Methods
     **************************************************************************/
     function run() {
+
+        // Recalculate the current time
         var now   = Date.now();
+
+        // calculate the time elapsed between the last m_time_then values
         var delta = now - m_time_then;
         if (!m_pause) {
             update(delta / 1000);
@@ -1018,6 +1062,8 @@ function App() {
         } else {
             ++m_update_counter;
         }
+
+        // Reset m_time_then to the time elapsed
         m_time_then = now;
         setTimeout(requestAnimationFrame(run), 100);
     }
@@ -1036,7 +1082,10 @@ function App() {
         // clear screen
         m_context.fillStyle = "#FFF";
         m_context.fillRect(0, 0, m_canvas.width, m_canvas.height);
-        // context and canvas used here
+        
+        // Using m_context, draw all the lines and shapes currently
+        // contained in m_context
+        // NOTE: context and canvas used here
         m_model.render_to(m_context);
     }
 
@@ -1098,6 +1147,11 @@ var g_app;
 
 // intending to modify global this
 this.start_app = function() {
+
+    // Create new instance of app
     g_app = new App();
+
+    // Create the canvas space on the html and get ready
+    // to take in user input! Rock and roll
     g_app.set_canvas_and_run("main-canvas");
 }

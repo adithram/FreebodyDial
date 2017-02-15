@@ -1,0 +1,11 @@
+QUESTIONS 
+ - handle_cursor_move purpose? 
+ - Line defined as a series of connected boxes?
+ - Purpose of explode(), point_within()? Related to groups?
+ - Purpose of bounds_around()? 
+
+RECOMMENDATIONS?
+ - Separate the "Vector" array of functions into a separate javascript file?
+   Or, simply use an existing JS like victor.js? http://victorjs.org/
+ - Separate the Model and Cursor functions? 
+ - Next Step, translate bar menu into html elements that can be controlled by the dial (mouse clicks in the meantime)?
