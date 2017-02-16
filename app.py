@@ -1,5 +1,5 @@
-
 from flask import Flask, render_template, session
+from flask_socketio import SocketIO
 import controllers
 import config
 
@@ -13,8 +13,10 @@ app.secret_key = "\x94W\xc0,\x98\xe4\x80\xb6\xc2Q\xbc\xf6\xbb^\x14hx\x9fj\x11\x1
 
 
 
+
 # Listen on external IPs
 # For us, listen to port 3000 so you can just run 'python app.py' to start the server
 if __name__ == '__main__':
     # listen on external IPs
     app.run(host=config.env['host'], port=config.env['port'], debug=True)
+    #socketio.run(app)
