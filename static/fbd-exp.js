@@ -12,6 +12,7 @@
 
 // on reflection: I perhaps should've used a geometry library as opposed to 
 //                reinventing the wheel, and wasting time
+//                DrawIO's API does what canvas does...
 
 var assert_new = {
     global_this : this,
@@ -281,6 +282,7 @@ function Line() {
     /** While the Line is being pulled (as part of its creation) or edited;
      *  snap_to_guideline will add a snapping effect allowing for more 
      *  consistent diagrams.
+     *  
      *  @param guide_line {Vector} A unit vector, representing a line, which 
      *                             this line will snap to.
      *  @param rads       {number} The snapping thershold in radians.
@@ -352,11 +354,9 @@ function Line() {
         m_control_points = new LineControlPoints(m_point_a, m_point_b); 
     }
     
-    this.hide_control_points = function() 
-        { this.disable_editing(); }
+    this.hide_control_points = function() { this.disable_editing(); }
 
-    this.handle_cursor_move = function(cursor_pos) 
-        { m_handle_cursor_move_func(cursor_pos); }
+    this.handle_cursor_move = function(cursor_pos) { m_handle_cursor_move_func(cursor_pos); }
     
     this.explode = function() { return this; }
     
@@ -384,8 +384,9 @@ function Line() {
     /**
      *  @return Returns true if the click modified the object, false otherwise.
      */
-    this.handle_cursor_click = function(cursor_pos, pressed) 
-        { return m_handle_cursor_click_func(cursor_pos, pressed); }
+    this.handle_cursor_click = function(cursor_pos, pressed) {
+        return m_handle_cursor_click_func(cursor_pos, pressed);
+    }
     
     this.draw = function(context) {
         context.beginPath();
@@ -471,7 +472,7 @@ function Group(sub_items) {
         var dist = Math.min( Math.abs(m_top_left.x     - point.x),
                              Math.abs(m_top_left.y     - point.y),
                              Math.abs(m_bottom_right.x - point.x),
-                             Math.abs(m_bottom_right.x - point.x) );
+                             Math.abs(m_bottom_right.y - point.y) );
         return (dist <= distance_limit);
     }
     
@@ -490,6 +491,8 @@ function Group(sub_items) {
                  width : m_bottom_right.x - m_top_left.x,
                  height: m_bottom_right.y - m_top_left.y };
     }
+    
+    this.handle_cursor_click = function(cursor_pos, pressed) {}
 }
 
 /** Represents a 'quick and dirty' menu. For prototyping purposes. Hopefully
@@ -500,6 +503,7 @@ function BarMenu() {
     assert_new.check(this);
     
     var m_entries = [];
+    var m_previous_press = undefined;
     // will have to be constant relative to the diagram
     var m_location = zero_vect();
     var m_size     = zero_vect();
@@ -515,9 +519,11 @@ function BarMenu() {
         for_each(m_entries, function(entry) {
             // ... reinventing the wheel?
             if (Vector.in_bounds(cursor, entry.bounds)) {
-                entry.callback();
+                if (m_previous_press !== entry)
+                    entry.callback();
+                m_previous_press = entry;
                 rv = true;
-                return true;
+                return true; // breaks out of for_each
             }
         });
         return rv;
@@ -533,7 +539,7 @@ function BarMenu() {
         context.font = "28px Arial";
         context.lineWidth = 1;
         context.strokeStyle = 'black';
-        context.fillStyle = 'black';
+        
         for_each(m_entries, function(entry) {
             var entry_size = { x: context.measureText(entry.text).width,
                                y: parseInt(context.font) };
@@ -543,10 +549,16 @@ function BarMenu() {
             
             // draw box around entry
             context.beginPath();
-            context.rect(draw_position.x, draw_position.y, entry_size.x, entry_size.y);
+            if (m_previous_press === entry) {
+                context.fillStyle = 'yellow';
+                context.fillRect(draw_position.x, draw_position.y, entry_size.x, entry_size.y);
+            } else {
+                context.rect(draw_position.x, draw_position.y, entry_size.x, entry_size.y);
+            }
             context.stroke();
             
             // entry text
+            context.fillStyle = 'black';
             context.fillText(entry.text, draw_position.x, draw_position.y + entry_size.y)
             
             m_size.x += entry_size.x;
@@ -567,7 +579,7 @@ function BarMenu() {
  *  @note user will -> as in user will so far as we can ascertain from input 
  *        json/mouse/keyboard or otherwise
  */
-function Cursor() {
+function Controller() {
     assert_new.check(this);
     
     var m_min_speed           = 200;
@@ -672,6 +684,33 @@ function Cursor() {
     }
 }
 
+(function(){
+    // "concept checking"
+    // must meet a "common interface"
+    function find_missing_function(obj) {
+        var required_functions = [
+            "show_control_points", "hide_control_points", "point_within",
+            "explode", "draw", "bounds", "handle_cursor_click"];
+        var rv = ""
+        for_each(required_functions, function(str) {
+            if (obj[str] === undefined) {
+                rv = str;
+                return true;
+            }
+        });
+        return rv;
+    }
+    function get_object_name(obj) {
+        return (/^function(.{1,})\(/).exec(obj.constructor.toString())[1];
+    }
+    for_each([new Line(), new Group([])], function(obj) {
+        var gv = find_missing_function(obj);
+        if (gv !== "") {
+            throw get_object_name(obj) + " does not have a required function defined: \"" + gv + "\".";
+        }
+    });
+}());
+
 /** The 'M' in MVC; represents the program's state.
  *  
  *  Right now the program is comprised only of lines, a menu, and hopefully 
@@ -681,36 +720,134 @@ function Cursor() {
  *        function closures to represent the inverse of user actions, and stack
  *        them onto an Array, and pop and execute as needed.
  */
+
+/* --------- UNDO FUNCTION --------- */
+// Potentially use sessions, stored as a list, to save previous user actions?
+/*
+1) User clicks on location to indicate line start point
+2) User releases mouse to indicate line end point
+3) Line stored in m_lines
+4) All lines in m_lines rendered
+
+In order to emulate the undo function...
+1) Decrease the list size by 1? 
+2) Re-render? 
+*/
 function Model(cursor) {
     assert_new.check(this);
 
     var m_cursor_ref = cursor;
 
     var m_lines = [];
+    var last_undone_line = new Line();
+    // weak references are not possible in JavaScript
+    // I maybe stuck with type switching... (ew)
+    // (perhaps in a new standard)
+    var m_diagram_objects = [];
+    
     var m_guidelines = [{ x: 1, y: 0 }, { x: 0, y: 1 }, Vector.norm({ x: 3, y: 1 }) ];
     
     var m_bar_menu = new BarMenu();
-    var m_is_drawing = true;
     
     var m_cursor_box = undefined;
     var self = this;
+    
+    function cursor_box_size() { return { x: 10, y: 10 }; }
+    
+    function snap_last_object_to_guidelines() {
+        if (m_lines.length === 0) return;
+        for_each(m_guidelines, function(guideline) {
+             // line specific
+            array_last(m_lines).snap_to_guideline(guideline, Math.PI/32);
+        });
+    }
+    
+    function delete_objects_too_small() {
+        m_lines = array_trim(m_lines, function(line) {
+            var bounds = line.bounds();
+            return (bounds.width < 10.0 && bounds.height < 10.0);
+        });
+    }
+    
+    function change_to_draw_mode() {
+        cursor.set_just_clicked_event(function() {
+            if (m_bar_menu.check_click(cursor.location()))
+                return;
+            
+            m_lines.push(new Line());
+            array_last(m_lines).set_at(cursor.location()); // line specific
+        });
+        
+        cursor.set_just_released_event(function() {
+            delete_objects_too_small();
+            snap_last_object_to_guidelines();
+        });
+        
+        cursor.set_click_held_event(function() {
+            // this is a continuous 'event'
+            // it is called on each time based update iff the cursor was 
+            // pressed on this and the previous frame
+            
+            if (m_lines.length !== 0)
+                array_last(m_lines).pull(cursor.location()); // line specific
+            
+            snap_last_object_to_guidelines();
+        });
+        
+        cursor.set_location_change_event(function() {
+            // identical to edit
+            m_cursor_box = Vector.bounds_around(cursor.location(), cursor_box_size());
+            
+            for_each(m_lines, function(line) {
+                line.handle_cursor_move(cursor.location());
+            });
+            snap_last_object_to_guidelines();
+        });
+    }
     
     m_bar_menu.push_entry("Edit", function() {
         for_each(m_lines, function(line) {
             line.enable_editing();
         });
-        m_is_drawing = false;
         console.log("edit");
-        self.change_to_draw_mode(m_cursor_ref);
+
+        cursor.set_just_clicked_event(function() {
+            if (m_bar_menu.check_click(cursor.location()))
+                return;
+            for_each(m_lines, function(line) {
+                line.handle_cursor_click(cursor.location(), cursor.is_pressed());
+            });
+        });
+        
+        cursor.set_just_released_event(function() {
+            // indentical to draw
+            // so these are common to both draw and edit?
+            snap_last_object_to_guidelines();
+            delete_objects_too_small();
+            
+            for_each(m_lines, function(line) {
+                line.handle_cursor_click(cursor.location(), cursor.is_pressed());
+            });
+        });
+        
+        cursor.set_click_held_event(function() {});
+        
+        cursor.set_location_change_event(function() {
+            m_cursor_box = Vector.bounds_around(cursor.location(), cursor_box_size());
+            
+            for_each(m_lines, function(line) {
+                line.handle_cursor_move(cursor.location());
+            });
+            snap_last_object_to_guidelines();
+        });
     });
     
     m_bar_menu.push_entry("Draw", function() {
         for_each(m_lines, function(line) {
             line.disable_editing();
         });
-        m_is_drawing = true;
         console.log("draw");
-        self.change_to_draw_mode(m_cursor_ref);
+        change_to_draw_mode(m_cursor_ref);
     });
     
     var m_candidate_group = undefined;
@@ -720,7 +857,8 @@ function Model(cursor) {
         m_candidate_group = [];
         cursor.reset_events();
         cursor.set_just_released_event(function() {
-            m_bar_menu.check_click(cursor.location());
+            if (m_bar_menu.check_click(cursor.location()))
+                return;
             // uniform interface, perhaps there should only be one array for 
             // the model?
             // DRY violation
@@ -741,12 +879,19 @@ function Model(cursor) {
                 return rv;
             });
         });
+        cursor.set_location_change_event(function() {
+            m_cursor_box = Vector.bounds_around(cursor.location(), cursor_box_size());
+        });
     });
     
     m_bar_menu.push_entry("Ungroup", function() {
         var cursor = m_cursor_ref;
+        
         // ass convuluted...
         if (m_candidate_group !== undefined) {
+            for_each(m_candidate_group, function(item) {
+                item.hide_control_points();
+            });
             m_groups.push(new Group(m_candidate_group));
             m_candidate_group = undefined;
         }
@@ -780,89 +925,50 @@ function Model(cursor) {
             handle_ungrouped_items(ungrouped_items);
             m_groups = array_trim_first(m_groups, function(group) {
                 var rv = undefined;
-                if ( (rv = line.point_within(cursor.location(), 10)) )
+                if ( (rv = group.point_within(cursor.location(), 10)) )
                     ungrouped_items = group.explode();
                 return rv;
             });
             handle_ungrouped_items(ungrouped_items);
         });
-        
+        cursor.set_location_change_event(function() {
+            m_cursor_box = Vector.bounds_around(cursor.location(), cursor_box_size());
+        });
     });
     
-    this.change_to_draw_mode = function(cursor) {
-        
-        cursor.set_just_clicked_event(function() {
-            m_bar_menu.check_click(cursor.location());
-            if (!m_is_drawing) return;
-            m_lines.push(new Line());
-            array_last(m_lines).set_at(cursor.location());
-        });
-        
-        cursor.set_just_released_event(function() {
-            if (m_lines.length === 0) return;
-            for_each(m_guidelines, function(guideline) {
-                array_last(m_lines).snap_to_guideline(guideline, Math.PI/32);
-            });
-            
-            m_lines = array_trim(m_lines, function(line) {
-                var bounds = line.bounds();
-                return (bounds.width < 10.0 && bounds.height < 10.0);
-            });
-        });
-        
-        cursor.set_click_held_event(function() {
-            if (m_is_drawing) {
-                // this is a continuous 'event'
-                // it is called on each time based update iff the cursor was 
-                // pressed on this and the previous frame
-                array_last(m_lines).pull(cursor.location());
-            }
-            if (m_lines.length !== 0) {
-                for_each(m_guidelines, function(guideline) {
-                    array_last(m_lines).snap_to_guideline(guideline, Math.PI/32);
-                });
-            }
-        });
-        
-        cursor.set_location_change_event(function() {
-            m_cursor_box = Vector.bounds_around
-                (cursor.location(), { x: 10, y: 10 });
-            
-            for_each(m_lines, function(line) {
-                line.handle_cursor_move(cursor.location());
-            });
-            if (m_lines.length !== 0) {
-                for_each(m_guidelines, function(guideline) {
-                    array_last(m_lines).snap_to_guideline(guideline, Math.PI/32);
-                });
-            }
-            for_each(m_lines, function(line) {
-                // kind of tricky, the for each loop breaks if true is returned
-                // line.handle_cursor_click returns true when the line has been
-                // modified by the event
-                line.handle_cursor_click(cursor.location(), cursor.is_pressed());
-            });
-        });
-    }
+    m_bar_menu.push_entry("Undo", function(){
+        console.log("Undo!");
+        // Remove the latest line added to m_lines
+        last_undone_line = m_lines[m_lines.length-1];
+        m_lines.pop();
+    });
 
+    /*m_bar_menu.push_entry("Redo", function(){
+        console.log("Redo");
+        m_lines.push(last_undone_line);
+        last_undone_line = new Line();
+    });*/
+    
+    change_to_draw_mode();
     
     this.render_to = function(view) {
         // view is a draw context object
         view.fillStyle = "#000";
-        view.fillRect(m_cursor_box.x    , m_cursor_box.y,
-                      m_cursor_box.width, m_cursor_box.height);
-
+        if (m_cursor_box !== undefined) {
+            view.fillRect(m_cursor_box.x    , m_cursor_box.y,
+                          m_cursor_box.width, m_cursor_box.height);
+        }
         for_each(m_lines, function(line) { line.draw(view); });
+        for_each(m_groups, function(group) { group.draw(view); });
         if (m_candidate_group !== undefined) {
             for_each(m_candidate_group, function(primitive) { primitive.draw(view); });
         }
-
         m_bar_menu.draw(view);
     }
 }
 
 
-function KeyboardController() {
+function KeyboardAdapter() {
     assert_new.check(this);
     var m_keys_down = {};
     this.update_cursor = function(cursor, et) {
@@ -891,7 +997,7 @@ function KeyboardController() {
         { delete m_keys_down[keycode]; }
 }
 
-function MouseController() {
+function MouseAdapter() {
     assert_new.check(this);
     var m_mouse_location = zero_vect();
     var m_mouse_pressed = false;
@@ -912,7 +1018,7 @@ function MouseController() {
 /** The JSON controller (due for renaming?), 
  * 
  */
-function JsonController() {
+function JsonAdapter() {
     assert_new.check(this);
     var m_direction = zero_vect();
     var m_click     = false;
@@ -953,14 +1059,14 @@ function App() {
     var m_context;
     var m_canvas;
     var m_time_then = Date.now();
-    var m_keyboard_controller = new KeyboardController();
-    var m_mouse_controller = new MouseController();
-    var m_json_controller = undefined;//new JsonController();
+    var m_keyboard_controller = new KeyboardAdapter();
+    var m_mouse_controller = new MouseAdapter();
+    var m_json_controller = undefined;
     var m_controllers = [m_keyboard_controller, m_mouse_controller];
     
     
     // "Backend" controller
-    var m_cursor = new Cursor();
+    var m_cursor = new Controller();
     var m_model = new Model(m_cursor);
 
     var m_json_target;
@@ -992,7 +1098,6 @@ function App() {
             ++m_update_counter;
         }
         m_time_then = now;
-        setTimeout(requestAnimationFrame(run), 100);
     }
 
     /** Update routine, this is called once per frame.
@@ -1038,28 +1143,38 @@ function App() {
         m_context = m_canvas.getContext("2d", { alpha: false, depth: false });
         // anything else to start up
 
-        m_model.change_to_draw_mode(m_cursor);
         // starts the app
         run();
     };
 
-    this.key_press = function(code)
-        { m_keyboard_controller.update_key_press(code); };
+    this.key_press = function(code) { 
+        m_keyboard_controller.update_key_press(code);
+        run();
+    };
 
-    this.key_release = function(code)
-        { m_keyboard_controller.update_key_release(code); };
+    this.key_release = function(code) {
+        m_keyboard_controller.update_key_release(code);
+        run();
+    };
 
-    this.mouse_move = function(loc)
-        { m_mouse_controller.update_location(loc); }
+    this.mouse_move = function(loc) {
+        m_mouse_controller.update_location(loc);
+        run();
+    }
 
-    this.mouse_click = function()
-        { m_mouse_controller.mouse_click(true ); }
-    this.mouse_release = function()
-        { m_mouse_controller.mouse_click(false); }
+    this.mouse_click = function() {
+        m_mouse_controller.mouse_click(true );
+        run();
+    }
+    
+    this.mouse_release = function() {
+        m_mouse_controller.mouse_click(false);
+        run();
+    }
 
     this.set_listen_target = function(target_address) {
         m_json_target = target_address;
-        m_json_controller = new JsonController();
+        m_json_controller = new JsonAdapter();
         m_controllers.push(m_json_controller);
     }
     
