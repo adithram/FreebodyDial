@@ -17,9 +17,8 @@ app.secret_key = "\x94W\xc0,\x98\xe4\x80\xb6\xc2Q\xbc\xf6\xbb^\x14hx\x9fj\x11\x1
 # For us, listen to port 3000 so you can just run 'python app.py' to start the server
 if __name__ == '__main__':
     # listen on external IPs
+    app.register_blueprint(controllers.canvas)
     app.run(host=config.env['host'], port=config.env['port'], debug=True)
     #socketio.run(app)
 
-    app.register_blueprint(controllers.canvas)
-	#app.register_blueprint(controllers.input_json)
-	
+    #app.register_blueprint(controllers.input_json)
