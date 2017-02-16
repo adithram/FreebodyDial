@@ -20,3 +20,7 @@ if __name__ == '__main__':
     # listen on external IPs
     app.run(host=config.env['host'], port=config.env['port'], debug=True)
     #socketio.run(app)
+
+    app.register_blueprint(controllers.canvas)
+	#app.register_blueprint(controllers.input_json)
+	
