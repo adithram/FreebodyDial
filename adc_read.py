@@ -96,10 +96,20 @@ while True:
                 print "Trim pot:" + trim_pot
                 print
 
-                if 0 <= trim_pot < 128:
+                click_on = False
+
+                if trim_pot == 0:
+                    if click_on:
+                        click_on = False
+                    else:
+                        click_on = True
+
+
+                if 0 < trim_pot < 128:
                     print "North\n"
                     data = {}
                     data['direction'] = 'north'
+                    data['click_on'] = click_on
                     url = ''
                     headers = {'content-type': 'application/json'}
                     r = requests.post(url, data=json.dumps(data), headers=headers)
@@ -108,6 +118,7 @@ while True:
                     print "Northeast\n"
                     data = {}
                     data['direction'] = 'northeast'
+                    data['click_on'] = click_on
                     url = ''
                     headers = {'content-type': 'application/json'}
                     r = requests.post(url, data=json.dumps(data), headers=headers)
@@ -115,6 +126,7 @@ while True:
                     print "East\n"
                     data = {}
                     data['direction'] = 'east'
+                    data['click_on'] = click_on
                     url = ''
                     headers = {'content-type': 'application/json'}
                     r = requests.post(url, data=json.dumps(data), headers=headers)
@@ -122,6 +134,7 @@ while True:
                     print "Southeast\n"
                     data = {}
                     data['direction'] = 'southeast'
+                    data['click_on'] = click_on
                     url = ''
                     headers = {'content-type': 'application/json'}
                     r = requests.post(url, data=json.dumps(data), headers=headers)
@@ -129,6 +142,7 @@ while True:
                     print "South\n"
                     data = {}
                     data['direction'] = 'south'
+                    data['click_on'] = click_on
                     url = ''
                     headers = {'content-type': 'application/json'}
                     r = requests.post(url, data=json.dumps(data), headers=headers)
@@ -136,6 +150,7 @@ while True:
                     print "Southwest\n"
                     data = {}
                     data['direction'] = 'southwest'
+                    data['click_on'] = click_on
                     url = ''
                     headers = {'content-type': 'application/json'}
                     r = requests.post(url, data=json.dumps(data), headers=headers)
@@ -143,6 +158,7 @@ while True:
                     print "West\n"
                     data = {}
                     data['direction'] = 'west'
+                    data['click_on'] = click_on
                     url = ''
                     headers = {'content-type': 'application/json'}
                     r = requests.post(url, data=json.dumps(data), headers=headers)
@@ -150,9 +166,10 @@ while True:
                     print "Northwest\n"
                     data = {}
                     data['direction'] = 'northwest'
+                    data['click_on'] = click_on
                     url = ''
                     headers = {'content-type': 'application/json'}
                     r = requests.post(url, data=json.dumps(data), headers=headers)
 
         # hang out and do nothing for a half second
-        time.sleep(0.5)
+        # time.sleep(0.5)

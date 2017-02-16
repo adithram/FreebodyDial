@@ -722,6 +722,7 @@ function Controller() {
  */
 
 /* --------- UNDO FUNCTION --------- */
+
 // Potentially use sessions, stored as a list, to save previous user actions?
 /*
 1) User clicks on location to indicate line start point
@@ -740,6 +741,7 @@ function Model(cursor) {
 
     var m_lines = [];
     var last_undone_line = new Line();
+
     // weak references are not possible in JavaScript
     // I maybe stuck with type switching... (ew)
     // (perhaps in a new standard)
@@ -931,6 +933,7 @@ function Model(cursor) {
             });
             handle_ungrouped_items(ungrouped_items);
         });
+
         cursor.set_location_change_event(function() {
             m_cursor_box = Vector.bounds_around(cursor.location(), cursor_box_size());
         });
