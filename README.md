@@ -26,7 +26,7 @@ Terminal Application:
 
 10. Usage: In the terminal window running "send.py" you can use "w", "a", "s", "d", "on", and "off" to signify movement. After each direction, push "enter" to send the motion. (i.e. "w" + "enter"). "on" or "off" switches the pen on or off. The second terminal window will indicate the json object recieved.
 
-- A drawing application has been designed to allow the user to draw 
+- A drawing application has been designed to allow the user to draw. Open the application and use your mouse to draw different line segments to create a free body diagram. 
 
 Drawing Application: 
 
