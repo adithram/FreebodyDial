@@ -1,6 +1,3 @@
-
-virtualenv venv;
-source venv/bin/activate;
-
+pip install virtualenv
 pip install flask;
 pip install requests;
