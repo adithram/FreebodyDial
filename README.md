@@ -6,7 +6,9 @@ Dial for free body diagram design. Designed for usability regardless of user dis
 
 Terminal Application:
 1. Download/clone the GitHub repository. 
+
 2. Open two terminal windows.
+
 3. In both windows, navigate to the GitHub repository
 4. In both windows, run the bash script named "depend.sh" with the command "bash depend.sh"
 5. In both windows, create a virtual environment with "virtualenv venv"
