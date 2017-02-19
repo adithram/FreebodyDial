@@ -13,11 +13,11 @@ Terminal Application:
 
 1. Download/clone the GitHub repository. 
 
-2. Open two terminal windows.
+2. Open two terminal windows (which have bash).
 
 3. In both windows, navigate to the GitHub repository
 
-4. In both windows, run the bash script named "depend.sh" with the command "bash depend.sh"
+4. In both windows, run the bash script named "depend.sh" with the command "bash depend.sh" 
 
 5. In both windows, create a virtual environment with "virtualenv venv"
 
@@ -38,5 +38,11 @@ Drawing Application:
 1. Navigate to the repository and into the templates folder. 
 
 2. Open canvas.html in a browser window. 
+
+#Alpha Release Notes:
+- The terminal creation of JSON objects and the front end web application has not been fully connected. The files have been written, and we are actively in the midst of debugging and completing the application in a manner such that the user draws on the canvas.html interface using the keyboard. Issues persist regarding latency and unit sizing the vectors. 
+- The peripheral hardware device has not been received as of Sunday, February 19. Therefore, rather than making a terminal application functional through the peripheral, we have chosen to use a keyboard base design for the alpha release. The driver for the joystick has been written (adc_read.py) but requires active testing. 
+- WebGL implementation was quickly scrapped due to the obvious success of a canvas based implementation. 
+
 
 
