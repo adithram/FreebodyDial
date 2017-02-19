@@ -5,6 +5,7 @@ Dial for free body diagram design. Designed for usability regardless of user dis
 - A terminal application has been designed to show sample user interaction and the creation/usage of JSON objects. The application lets the user interact through the keyboard describing movement. The keyboard functionality corresponds to movements that will eventually occur through a dial peripheral. The keyboard application will generate JSON objects. 
 
 Terminal Application:
+
 1. Download/clone the GitHub repository. 
 
 2. Open two terminal windows.
