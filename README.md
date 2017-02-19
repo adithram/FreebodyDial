@@ -6,6 +6,8 @@ Dial for free body diagram design. Designed for usability regardless of user dis
 
 Terminal Application:
 
+*If necessary, install pip using this link: https://pip.pypa.io/en/stable/installing/
+
 1. Download/clone the GitHub repository. 
 
 2. Open two terminal windows.
