@@ -27,7 +27,7 @@ Terminal Application:
 
 8. In one terminal window, run the python file "app.py" with the command "python app.py"
 
-9. In the second terminal window, run the python file "send.py" with the command "python send.py
+9. In the second terminal window, run the python file "send.py" with the command "python send.py (If an error occurs here, exit the virtual environment, and run the command outside of the virtual environment in the same file location)
 
 10. Usage: In the terminal window running "send.py" you can use "w", "a", "s", "d", "on", and "off" to signify movement. After each direction, push "enter" to send the motion. (i.e. "w" + "enter"). "on" or "off" switches the pen on or off. The second terminal window will indicate the json object recieved.
 
