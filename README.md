@@ -39,10 +39,12 @@ Drawing Application:
 
 2. Open canvas.html in a browser window. 
 
+3. Usage: Click and hold the mouse in the clicked position to draw a line primitive. Lift your finder off the clicked mouse to stop drawing. Click edit to enter edit mode. Click draw to enter draw mode. In addition you can group, ungroup and undo line primitives. (Bugs exist with grouping, ungrouping and undoing)
+
 #Alpha Release Notes:
 - The terminal creation of JSON objects and the front end web application has not been fully connected. The files have been written, and we are actively in the midst of debugging and completing the application in a manner such that the user draws on the canvas.html interface using the keyboard. Issues persist regarding latency and unit sizing the vectors. 
 - The peripheral hardware device has not been received as of Sunday, February 19. Therefore, rather than making a terminal application functional through the peripheral, we have chosen to use a keyboard base design for the alpha release. The driver for the joystick has been written (adc_read.py) but requires active testing. 
 - WebGL implementation was quickly scrapped due to the obvious success of a canvas based implementation. 
-
+- Bugs still exist with the group, ungroup and undo feature. 
 
 
