@@ -1,5 +1,12 @@
 "use strict";
 
+var LineConstants = {
+    POINT_A_STRING : 'a',
+    POINT_B_STRING : 'b',
+    BOTH_POINTS    : 'both'
+};
+Object.freeze(LineConstants);
+
 /** The set of small boxes, which allows the user to edit a Line primative.
  *  It can also be used to merely highlight a line (for now).
  *  @note This type is not meant to be used with any other expect for Line.
@@ -82,15 +89,15 @@ function LineControlPoints(point_a, point_b) {
         }
         if (Vector.in_bounds(cursor_pos, m_move_point_a)) {
             m_update_control_point_func = update_point_a;
-            return 'a';
+            return LineConstants.POINT_A_STRING;
         }
         if (Vector.in_bounds(cursor_pos, m_move_point_b)) {
             m_update_control_point_func = update_point_b;
-            return 'b';
+            return LineConstants.POINT_B_STRING;
         }
         if (Vector.in_bounds(cursor_pos, m_move_whole_line)) {
             m_update_control_point_func = update_both_points;
-            return 'both';
+            return LineConstants.BOTH_POINTS;
         }
         return '';
     }
@@ -124,14 +131,23 @@ function LineControlPoints(point_a, point_b) {
 function Line() {
     assert_new.check(this);
 
+    /**************************************************************************
+                              Line (Private Members)
+                              (One line or undefined)
+    **************************************************************************/
+    
     var m_point_a = zero_vect();
     var m_point_b = zero_vect();
     var m_control_points = undefined;
-    
     var m_handle_cursor_move_func  = undefined;
     var m_handle_cursor_click_func = undefined;
     
-    var handle_cursor_move_editing = function(cursor_pos) {
+    /**************************************************************************
+                              Line Editing (Private)
+    **************************************************************************/
+    
+    var handle_cursor_move_editing = function(cursor_obj) {
+        var cursor_pos = cursor_obj.location();
         var gv = m_control_points.handle_cursor_move(cursor_pos);
         var rv = false;
         if (gv.a !== undefined) {
@@ -145,18 +161,102 @@ function Line() {
         return rv;
     };
     
-    var handle_cursor_click_editing = function(cursor_pos, pressed) {
-        m_control_points.handle_cursor_click(cursor_pos, pressed);
+    var handle_cursor_click_editing = function(cursor_obj) {
+        var cursor_pos = cursor_obj.location(), pressed = cursor_obj.is_pressed();
+        return m_control_points.handle_cursor_click(cursor_pos, pressed);
     };
     
     /**************************************************************************
-                                  Line Creation
+                           Line Initial Drawing (Private)
+                              Put in place on creation
     **************************************************************************/
 
-    this.set_at = function(v) { m_point_b = m_point_a = v; }
+    m_handle_cursor_click_func = function(cursor_obj) {
+        if (cursor_obj.is_pressed()) {
+            m_point_b = m_point_a = cursor_obj.location();
+        } else {
+            m_handle_cursor_click_func = m_handle_cursor_move_func = 
+                function(o){};
+        }
+    };
 
-    this.pull = function(v) { m_point_b = v; }
+    m_handle_cursor_move_func = function(cursor_obj) {
+        m_point_b = cursor_obj.location();
+    };
+
+    /**************************************************************************
+                                  Line Editing
+    **************************************************************************/
+
+    this.enable_editing = function() { 
+        this.highlight();
+        m_handle_cursor_move_func  = handle_cursor_move_editing ;
+        m_handle_cursor_click_func = handle_cursor_click_editing;
+    }
     
+    this.disable_editing = function() { 
+        m_control_points = undefined; 
+        m_handle_cursor_move_func  = function(c) {};
+        m_handle_cursor_click_func = function(c, p) { return ''; };
+    }
+    
+    this.highlight = function() {
+        m_control_points = new LineControlPoints(m_point_a, m_point_b); 
+    }
+    
+    this.unhighlight = function() { 
+        m_control_points = undefined;
+    }
+
+    /**************************************************************************
+                               Grouping Functions
+    **************************************************************************/
+    
+    this.explode = function() { return this; }
+    
+    /**************************************************************************
+                                 Cursor Events
+    **************************************************************************/
+    
+    /** Called on state change
+     *  @return Returns a string characterizing the effect of the click event,
+     *          '' for no effect.
+     */
+    this.handle_cursor_click = function(cursor_pos, pressed) {
+        return m_handle_cursor_click_func(cursor_pos, pressed);
+    }
+    
+    /** Called when there is no change to the is_clicked event
+     */
+    this.handle_cursor_move = function(cursor_pos, pressed) {
+        m_handle_cursor_move_func(cursor_pos); 
+    }
+    
+    /**************************************************************************
+                                 Other \_o.o_/
+    **************************************************************************/
+
+    this.point_within = function(point, distance_limit) {
+        // Geometry, derived from mathematics:
+        // https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
+        if (distance_limit === undefined)
+            throw "distance_limit must be defined";
+        
+        var a = m_point_a;
+        var b = m_point_b;
+        var c = point;
+        var xs_diff_sq = (a.x - b.x)*(a.x - b.x);
+        var ys_diff_sq = (a.y - b.y)*(a.y - b.y);
+        
+        // Prevent NaN
+        if (xs_diff_sq === 0 && ys_diff_sq === 0)
+            return Vector.distance(c, a) <= distance_limit; 
+        
+        var dist = Math.abs((b.y - a.y)*c.x - (b.x - a.x)*c.y + b.x*a.y - b.y*a.x)/
+                   Math.sqrt(xs_diff_sq + ys_diff_sq);
+        return (dist <= distance_limit);
+    }
+
     /** While the Line is being pulled (as part of its creation) or edited;
      *  snap_to_guideline will add a snapping effect allowing for more 
      *  consistent diagrams.
@@ -165,6 +265,7 @@ function Line() {
      *                             this line will snap to.
      *  @param rads       {number} The snapping thershold in radians.
      */
+    // :WARNING: I AM going to change how this works!
     this.snap_to_guideline = function(guide_line, rads) {
         var diff = { x: m_point_a.x - m_point_b.x, 
                      y: m_point_a.y - m_point_b.y };
@@ -210,61 +311,6 @@ function Line() {
         
         return true;
     }
-        
-    /**************************************************************************
-                                  Line Editing
-    **************************************************************************/
-
-    this.enable_editing = function() { 
-        this.show_control_points();
-        m_handle_cursor_move_func  = handle_cursor_move_editing ;
-        m_handle_cursor_click_func = handle_cursor_click_editing;
-    }
-    
-    this.disable_editing = function() { 
-        m_control_points = undefined; 
-        m_handle_cursor_move_func  = function(c) {};
-        m_handle_cursor_click_func = function(c, p) { return false; };
-    }
-    this.disable_editing();
-    
-    this.show_control_points = function() {
-        m_control_points = new LineControlPoints(m_point_a, m_point_b); 
-    }
-    
-    this.hide_control_points = function() { this.disable_editing(); }
-
-    this.handle_cursor_move = function(cursor_pos) { m_handle_cursor_move_func(cursor_pos); }
-    
-    this.explode = function() { return this; }
-    
-    this.point_within = function(point, distance_limit) {
-        // Geometry, derived from mathematics:
-        // https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
-        if (distance_limit === undefined)
-            throw "distance_limit must be defined";
-        
-        var a = m_point_a;
-        var b = m_point_b;
-        var c = point;
-        var xs_diff_sq = (a.x - b.x)*(a.x - b.x);
-        var ys_diff_sq = (a.y - b.y)*(a.y - b.y);
-        
-        // Prevent NaN
-        if (xs_diff_sq === 0 && ys_diff_sq === 0)
-            return Vector.distance(c, a) <= distance_limit; 
-        
-        var dist = Math.abs((b.y - a.y)*c.x - (b.x - a.x)*c.y + b.x*a.y - b.y*a.x)/
-                   Math.sqrt(xs_diff_sq + ys_diff_sq);
-        return (dist <= distance_limit);
-    }
-    
-    /**
-     *  @return Returns true if the click modified the object, false otherwise.
-     */
-    this.handle_cursor_click = function(cursor_pos, pressed) {
-        return m_handle_cursor_click_func(cursor_pos, pressed);
-    }
     
     this.draw = function(context) {
         context.beginPath();
@@ -284,4 +330,4 @@ function Line() {
                  width : Math.abs(m_point_a.x - m_point_b.x),
                  height: Math.abs(m_point_a.y - m_point_b.y) };
     }
-}
+} // end of Line

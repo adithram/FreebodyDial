@@ -25,12 +25,12 @@ function Group(sub_items) {
     for_init_compute_bounds_around_array(sub_items);
     for_init_compute_bounds_around_array = undefined;
     
-    this.show_control_points = function() {
+    this.highlight = function() {
         m_control_points = 
             new RectangularControlPoints(m_top_left, m_bottom_right);
     }
     
-    this.hide_control_points = function() {
+    this.unhighlight = function() {
         m_control_points = undefined;
     }
     
@@ -59,5 +59,12 @@ function Group(sub_items) {
                  height: m_bottom_right.y - m_top_left.y };
     }
     
-    this.handle_cursor_click = function(cursor_pos, pressed) {}
+    this.handle_cursor_click = function(cursor_obj) {}
+    this.handle_cursor_move  = function(cursor_obj) {}
+    this.enable_editing = function() {
+        this.highlight();
+    }
+    this.disable_editing = function () {
+        this.unhighlight();
+    }
 }
