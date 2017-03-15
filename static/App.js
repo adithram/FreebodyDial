@@ -21,6 +21,14 @@ function KeyboardAdapter() {
             y_dir /= Math.sqrt(2);
         }
         cursor.move_in_direction({ x : x_dir, y : y_dir });
+
+        if( 77 in m_keys_down) { //'m' key for XMB
+            // console.log("m key pressed!");
+            // var xmb = new XMLHttpRequest();
+            // xmb.open("GET", "", true);
+            // xmb.send();
+            window.location.href = "/XMB/index.html"
+        }
     }
     this.update_key_press = function(keycode)
         { m_keys_down[keycode] = true; }
