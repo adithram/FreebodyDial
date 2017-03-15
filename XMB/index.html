@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html >
+<head>
+  <meta charset="UTF-8">
+  <title>XMB ripoff</title>
+  
+  
+  <link rel='stylesheet prefetch' href='https://fonts.googleapis.com/icon?family=Material+Icons|Roboto'>
+
+      <link rel="stylesheet" href="css/style.css">
+
+  
+</head>
+
+<body>
+  
+<iframe class="bg" src="http://fenwick67.github.io/xmb/?test"></iframe>
+<h1 class="top">XMB</h1>
+<div id="xmb-contain">
+  <div id="xmb">
+    <ul>
+      <li class="column" v-for="column,index in columns" v-bind:class="{active:column.active}" v-bind:style="{left:column.position.x+'px'}">
+        <div class="cell" v-bind:class="{active:column.active}" v-on:click="highlightCell(column.index,0)"><i class="material-icons xmb-icon">{{column.icon}}</i>
+          <label>{{column.title}}</label>
+        </div>
+        <ul>
+          <li class="cell submenu" v-for="item,itemIndex in column.items" v-bind:class="{active:item.active}" v-bind:style="{top:item.position.y+'px'}" v-on:click="highlightCell(column.index,itemIndex)">           <a v-bind:href="item.active?item.href||'#missinglink':'#'"><i class="material-icons xmb-icon">{{item.icon}}</i>
+              <label>{{item.title}}
+                <label class="subtitle">{{item.subtitle}}</label>
+              </label></a></li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</div>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/vue/2.0.3/vue.js'></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/zepto/1.2.0/zepto.min.js'></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.15.0/lodash.min.js'></script>
+
+    <script src="js/index.js"></script>
+
+</body>
+</html>

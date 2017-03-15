@@ -86,6 +86,19 @@ function Model(cursor) {
             return (bounds.width < 10.0 && bounds.height < 10.0);
         });
     }
+
+    function load_XMB() {
+
+        var pug = require('pug');
+
+        // compile index.pug in /XMB/ 
+        var fn = pug.compileFile('XMB/index.pug');
+
+        // render the function
+        var html = fn(locals);
+
+        console.log(html);
+    }
     
     function change_to_draw_mode() {
         cursor.set_just_clicked_event(function() {

@@ -22,17 +22,33 @@ body, html {
 <script src="../static/Line.js"></script>
 <script src="../static/RectangularControlPoints.js"></script>
 <script src="../static/Group.js"></script>
+
 <!-- user interface here -->
 <script src="../static/BarMenu.js"></script>
+
 <!-- main application here -->
 <script src="../static/Controller.js"></script>
 <script src="../static/Model.js"></script>
 <script src="../static/App.js"></script>
 
+<!-- XMB menu scripts here -->
+<script type="../XMB/script.babel"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.0.3/vue.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/zepto/1.2.0/zepto.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.15.0/lodash.min.js"></script>
+
 <script type="text/javascript">
 // for rendering html in canvas:
 // https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Drawing_DOM_objects_into_a_canvas
 var g_app;
+
+function loadXMB() {
+    const pug = require('pug');
+
+    // compile the source code in /XMB/index.pug
+    const compiled = pug.renderFile('/XMB/index.pug');
+}
+
 function reset_canvas_size() {
     $("#main-canvas").attr("width" , $(window).width ().toString());
     $("#main-canvas").attr("height", $(window).height().toString());
