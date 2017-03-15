@@ -27,7 +27,7 @@ function KeyboardAdapter() {
             // var xmb = new XMLHttpRequest();
             // xmb.open("GET", "", true);
             // xmb.send();
-            window.location.href = "/XMB/index.html"
+            window.location.href = "/Users/Dennis Chang/Desktop/WINTER 2017/EECS 481/FreebodyDial/XMB/index.html"
         }
     }
     this.update_key_press = function(keycode)
