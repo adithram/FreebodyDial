@@ -15,12 +15,6 @@ function KeyboardAdapter() {
         } else if (40 in m_keys_down) { // down
             y_dir =  1;
         }
-        // normalize the input
-        if (x_dir !== 0 && y_dir !== 0) {
-            x_dir /= Math.sqrt(2);
-            y_dir /= Math.sqrt(2);
-        }
-        cursor.move_in_direction({ x : x_dir, y : y_dir });
 
         if (77 in m_keys_down){
             console.log("m key pressed!");
@@ -32,6 +26,14 @@ function KeyboardAdapter() {
             document.getElementById("myNav").style.height = "0%";
             document.getElementById("main-canvas").style.height = "100%";
         }
+
+        // normalize the input
+        if (x_dir !== 0 && y_dir !== 0) {
+            x_dir /= Math.sqrt(2);
+            y_dir /= Math.sqrt(2);
+        }
+        cursor.move_in_direction({ x : x_dir, y : y_dir });
+
     }
     this.update_key_press = function(keycode)
         { m_keys_down[keycode] = true; }
