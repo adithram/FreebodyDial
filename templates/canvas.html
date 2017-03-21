@@ -23,7 +23,11 @@ body, html {
 <script src="../static/RectangularControlPoints.js"></script>
 <script src="../static/Group.js"></script>
 
+<!-- All XMB front-end and back-end files -->
 <link rel="stylesheet" type="text/css" href="../static/XMB.css" />
+<script src="../static/XMB.js"></script>
+<script src="../static/underscore-min.js"></script>
+<script src="../static/underscore.js"></script>
 
 <!-- user interface here -->
 <script src="../static/BarMenu.js"></script>
@@ -64,13 +68,25 @@ $(document).ready(function() {
 <span id="debug-message-2"></span>-->
 
 <div id="myNav" class="overlay">
-  <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
-  <div class="overlay-content">
-    <a href="#">About</a>
-    <a href="#">Services</a>
-    <a href="#">Clients</a>
-    <a href="#">Contact</a>
-  </div>
+  <iframe class="bg" src="http://fenwick67.github.io/xmb/?test"></iframe>
+    <h1 class="top">XMB</h1>
+    <div id="xmb-contain">
+      <div id="xmb">
+        <ul>
+          <li class="column" v-for="column,index in columns" v-bind:class="{active:column.active}" v-bind:style="{left:column.position.x+'px'}">
+            <div class="cell" v-bind:class="{active:column.active}" v-on:click="highlightCell(column.index,0)"><i class="material-icons xmb-icon">{{column.icon}}</i>
+              <label>{{column.title}}</label>
+            </div>
+            <ul>
+              <li class="cell submenu" v-for="item,itemIndex in column.items" v-bind:class="{active:item.active}" v-bind:style="{top:item.position.y+'px'}" v-on:click="highlightCell(column.index,itemIndex)">           <a v-bind:href="item.active?item.href||'#missinglink':'#'"><i class="material-icons xmb-icon">{{item.icon}}</i>
+                  <label>{{item.title}}
+                    <label class="subtitle">{{item.subtitle}}</label>
+                  </label></a></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
 </div>
 
 </body>
