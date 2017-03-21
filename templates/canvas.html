@@ -36,6 +36,13 @@ body, html {
 // https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Drawing_DOM_objects_into_a_canvas
 var g_app;
 
+function loadXMB() {
+    const pug = require('pug');
+
+    // compile the source code in /XMB/index.pug
+    const compiled = pug.renderFile('/XMB/index.pug');
+}
+
 function reset_canvas_size() {
     $("#main-canvas").attr("width" , $(window).width ().toString());
     $("#main-canvas").attr("height", $(window).height().toString());
