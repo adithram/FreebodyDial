@@ -90,7 +90,7 @@ var xmbVue = new Vue({
     },
     highlightCell: function highlightCell(column, row) {
 
-      console.log(column, row);
+      //console.log(column, row);
       //update position of elements as well
       var xAccum = (-column - 1) * (ICON_SIZE + PADDING);
       if (column == 0) {
