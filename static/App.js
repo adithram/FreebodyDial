@@ -22,12 +22,15 @@ function KeyboardAdapter() {
         }
         cursor.move_in_direction({ x : x_dir, y : y_dir });
 
-        if( 77 in m_keys_down) { //'m' key for XMB
-            // console.log("m key pressed!");
-            // var xmb = new XMLHttpRequest();
-            // xmb.open("GET", "", true);
-            // xmb.send();
-            window.location.href = "/Users/Dennis Chang/Desktop/WINTER 2017/EECS 481/FreebodyDial/XMB/index.html"
+        if (77 in m_keys_down){
+            console.log("m key pressed!");
+            document.getElementById("myNav").style.height = "100%";
+            document.getElementById("main-canvas").style.height = "0%";
+        }
+        else if (78 in m_keys_down){
+            console.log("n key pressed!");
+            document.getElementById("myNav").style.height = "0%";
+            document.getElementById("main-canvas").style.height = "100%";
         }
     }
     this.update_key_press = function(keycode)
