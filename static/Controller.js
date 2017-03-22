@@ -38,10 +38,19 @@ function Controller() {
     this.location = function() { return m_cursor_location; }
     
     this.is_pressed = function() { return m_click_held; }
+
+    this.as_read_only = function() {
+        return new function(loc_, is_pres_) {
+            var loc     = loc_    ;
+            var is_pres = is_pres_;
+            this.location   = function() { return loc    ; }
+            this.is_pressed = function() { return is_pres; }
+            
+        }(this.location(), this.is_pressed());
+    }
     
     this.set_location = function(v) {
         m_cursor_location = v;
-        console.log('set_location');
         if (m_location_change_event !== undefined)
             m_location_change_event();
     }

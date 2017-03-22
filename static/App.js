@@ -130,7 +130,7 @@ function App() {
      *  @param {Number} et Elapsed time in seconds.
      */
     function update(et) {
-        for_each(m_controllers, function(controller) {
+        m_controllers.forEach(function(controller) {
             controller.update_cursor(m_cursor, et);
         });
         m_cursor.do_time_based_updates(et);
