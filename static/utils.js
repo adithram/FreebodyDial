@@ -18,9 +18,11 @@ function assert_not_nan(f) { if (f != f) throw "Nan!"; }
 
 function array_last(arr) { return arr[arr.length - 1]; }
 
+function set_array_last(arr, item) { arr[arr.length - 1] = item; return arr; }
+
 function array_clean(arr) {
     var rv = [];
-    for_each(arr, function(entry) {
+    arr.forEach(function(entry) {
         if (entry)
             rv.push(entry);
     });
@@ -51,6 +53,10 @@ function array_trim_first(arr, condition) {
     return modify_array(arr);
 }
 
+// to be replaced later with victor
+// var Vector = "victor"
+// Vector.in_bounds = ...
+// ...
 var Vector = {
     mag : function(v) {
         return Math.sqrt(v.x*v.x + v.y*v.y);
@@ -101,14 +107,3 @@ function draw_bounds_as_black_outlined_box(context, cp_bounds, fill_color) {
     context.strokeStyle = 'black';
     context.stroke();
 }
-
-function for_each(array, callback) {
-    for (var i = 0; i < array.length; ++i) {
-        var wants_break = callback(array[i]);
-        if (wants_break !== undefined) {
-            if (wants_break === true)
-                return;
-        }
-    }
-}
-

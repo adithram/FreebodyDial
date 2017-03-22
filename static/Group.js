@@ -10,7 +10,7 @@ function Group(sub_items) {
     var for_init_compute_bounds_around_array = function(items) {
         var top_left_most     = { x:  Infinity, y:  Infinity };
         var bottom_right_most = { x: -Infinity, y: -Infinity };
-        for_each(items, function(item) {
+        items.forEach(function(item) {
             var bounds_ = item.bounds();
             top_left_most.x = Math.min(top_left_most.x, bounds_.x);
             top_left_most.y = Math.min(top_left_most.y, bounds_.y);

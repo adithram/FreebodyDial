@@ -51,7 +51,6 @@ function Controller() {
     
     this.set_location = function(v) {
         m_cursor_location = v;
-        console.log('set_location');
         if (m_location_change_event !== undefined)
             m_location_change_event();
     }

@@ -3,13 +3,21 @@
 (function(){
     // "concept checking"
     // must meet a "common interface"
+    // concern: this interface is becoming too bulky?
+    // primitives are handling their own events?!
     function find_missing_function(obj) {
         var required_functions = [
-            "highlight", "unhighlight", "point_within",
-            "explode", "draw", "bounds", "handle_cursor_click", 
-            "handle_cursor_move", "enable_editing", "disable_editing"];
+            "highlight", "unhighlight", 
+            // geometry
+            "point_within", "bounds",
+            "explode", 
+            "draw", 
+            // events
+            "handle_cursor_move", "handle_cursor_click",
+            // edit mode specific
+            "enable_editing", "disable_editing"];
         var rv = "";
-        for_each(required_functions, function(str) {
+        required_functions.forEach(function(str) {
             if (obj[str] === undefined) {
                 rv = str;
                 return true;
@@ -20,7 +28,7 @@
     function get_object_name(obj) {
         return (/^function(.{1,})\(/).exec(obj.constructor.toString())[1];
     }
-    for_each([new Line(), new Group([])], function(obj) {
+    [new Line(), new Group([])].forEach(function(obj) {
         var gv = find_missing_function(obj);
         if (gv !== "") {
             throw get_object_name(obj) + " does not have a required " + 
@@ -30,30 +38,106 @@
 }());
 
 function Ellipse() {
+    assert_new.check(this);
     var m_radii = zero_vect();
+    // location means origin
     var m_location = zero_vect();
+    
+    var m_first_point = undefined;
+    var m_finished_creating = false;
+    var self = this;
     this.set_location = function(x_, y_) { m_location = { x: x_, y: y_ }; }
     this.set_radii = function(x_, y_) { m_radii = { x: x_, y: y_ }; }
+    this.finished_creating = function() { return m_finished_creating; }
+    this.highlight = function() {}
+    this.unhighlight = function() {}
+    this.enable_editing  = function() {}
+    this.disable_editing = function() {}
+        
+    this.point_within = undefined;
+    this.explode = function() { return this; } 
+    this.bounds = function() {
+        return { x : m_location.x - m_radii.x, 
+                 y : m_location.y - m_radii.y, 
+                 width : m_radii.x*2.0, 
+                 height: m_radii.y*2.0 }
+    }
+    
+    var creation_second_handle_cursor_click = function(cursor_obj) {
+        if (cursor_obj.is_pressed()) return; // release event only
+        // initial function
+        console.log('moving to final step...')
+        m_first_point = cursor_obj.location();
+        self.handle_cursor_move = function(cursor_obj) {
+            var cur_loc = cursor_obj.location();
+            // x1 = x0 + a * cos(t) -> (x1 - x0)/cos(t) = a 
+            // y1 = y0 + b * sin(t) -> (y1 - y0)/sin(t) = b
+            // x2 = x0 + a * cos(u)
+            // y2 = y0 + b * sin(u)
+            // x1 - x2 = a * cos(t) - a * cos(u)
+            // x1 - x2 = a * ( cos(t) - cos(u) )
+            // y1 - y2 = b * ( sin(t) - sin(u) )
+            //var u = Vector.angle_between({ x: 1, y: 0 }, m_first_point);
+            //var t = Vector.angle_between({ x: 1, y: 0 }, cur_loc      );
+            var num = cur_loc.x**2*m_first_point.y**2 - cur_loc.y**2*m_first_point.x**2;
+            m_radii.x = Math.sqrt(Math.abs(num / (cur_loc.x**2 - m_first_point.x**2)));
+            m_radii.y = Math.sqrt(Math.abs(num / (cur_loc.y**2 - m_first_point.y**2)));
+            //m_radii.y = (cur_loc.x - m_first_point.x) / (Math.cos(t) - Math.cos(u));
+            //m_radii.x = (cur_loc.y - m_first_point.y) / (Math.sin(t) - Math.sin(u));
+            if (Math.random() > 0.95) {
+                //console.log("angle values fp: "+u+" cur_pos: "+t);
+                console.log("radii values : (x: "+m_radii.x+", y: "+m_radii.y+")");
+            }
+        }
+        self.handle_cursor_click = function(cursor_obj) {
+            if (!cursor_obj.is_pressed()) {
+                m_finished_creating = true;
+                self.handle_cursor_click = self.handle_cursor_move = function(_) {}
+            }
+        }
+    }
+    
+    this.handle_cursor_click = function(cursor_obj) {
+        if (cursor_obj.is_pressed()) {
+            m_location = cursor_obj.location();
+            console.log("ellipse location set");
+            return;
+        }
+        console.log("cursor move event function changed");
+        self.handle_cursor_move = function(cursor_obj) {
+            m_radii.x = m_radii.y = Vector.distance(cursor_obj.location(), m_location);
+        }
+        
+        self.handle_cursor_click = creation_second_handle_cursor_click;
+    }
+    
+    this.handle_cursor_move = function(_) {} 
+    
     this.draw = function(context) {
         // save state
         context.save();
 
         // scale context horizontally
-        context.scale(m_radii.x, m_radii.y);
-
+        context.translate(m_location.x, m_location.y);
+        context.scale    (m_radii.x   , m_radii.y   );
+        
         // draw circle which will be stretched into an oval
         context.beginPath();
-        context.arc(m_location.x, m_location.y, 1, 0, 2*Math.PI, false);
-
+        context.arc(0, 0, 1, 0, 2*Math.PI, false);
+        
         // restore to original state
         context.restore();
 
         // apply styling
-        context.fillStyle = 'white';
+        context.fillStyle = 'black';
         context.fill();
-        context.lineWidth = 1;
+        context.lineWidth = 3;
         context.strokeStyle = 'black';
         context.stroke();
+        if (m_first_point !== undefined) {
+            var fp_bounds = Vector.bounds_around(m_first_point, { x: 10, y: 10 });
+            draw_bounds_as_black_outlined_box(context, fp_bounds, 'black');
+        }
     }
 }
 
@@ -100,14 +184,14 @@ function Model(cursor) {
     var self = this; // some closures can't get to 'this', self is a fix for 'this'
         
     function for_each_line_in(array, func) {
-        for_each(array, function(item) {
+        array.forEach(function(item) {
             if (item instanceof Line)
                 return func(item);
         });
     }
     
     function assert_no_empties(array) {
-        for_each(array, function(item) {
+        array.forEach(function(item) {
             if (item === undefined)
                 throw "Array contains empties!";
         });
@@ -117,7 +201,7 @@ function Model(cursor) {
     
     function snap_last_object_to_guidelines() {
         if (m_diagram_objects.length === 0) return;
-        for_each(m_guidelines, function(guideline) {
+        m_guidelines.forEach(function(guideline) {
             // line specific
             var last = array_last(m_diagram_objects);
             if (last instanceof Line)
@@ -138,17 +222,21 @@ function Model(cursor) {
             // input
             if (m_bar_menu.check_click(cursor.location()))
                 return;
-            
+            if (m_diagram_objects.length > 0) {
+                if (!array_last(m_diagram_objects).finished_creating())
+                    return;
+            }
             // we can now trade this for any primitive
             // Say an ellipse or polygon or Text
-            m_diagram_objects.push(new Line());
+            m_diagram_objects.push(new Polygon());
             array_last(m_diagram_objects).handle_cursor_click(cursor.as_read_only());
         });
         
         cursor.set_just_released_event(function() {
-            delete_objects_too_small();
+            //delete_objects_too_small();
             snap_last_object_to_guidelines();
-            array_last(m_diagram_objects).handle_cursor_click(cursor.as_read_only());
+            if (m_diagram_objects.length !== 0)
+                array_last(m_diagram_objects).handle_cursor_click(cursor.as_read_only());
         });
         
         cursor.set_click_held_event(function() {
@@ -171,7 +259,7 @@ function Model(cursor) {
     }
     
     m_bar_menu.push_entry("Edit", function() {
-        for_each(m_diagram_objects, function(object) { 
+        m_diagram_objects.forEach(function(object) { 
             object.enable_editing();
         });
         console.log("edit");
@@ -179,7 +267,7 @@ function Model(cursor) {
         cursor.set_just_clicked_event(function() {
             if (m_bar_menu.check_click(cursor.location()))
                 return;
-            for_each(m_diagram_objects, function(object) {
+            m_diagram_objects.forEach(function(object) {
                 object.handle_cursor_click(cursor.as_read_only());
             });            
         });
@@ -190,7 +278,7 @@ function Model(cursor) {
             snap_last_object_to_guidelines();
             delete_objects_too_small();
             
-            for_each(m_diagram_objects, function(object) {
+            m_diagram_objects.forEach(function(object) {
                 object.handle_cursor_click(cursor.as_read_only());
             });
         });
@@ -200,7 +288,7 @@ function Model(cursor) {
         cursor.set_location_change_event(function() {
             m_cursor_box = Vector.bounds_around(cursor.location(), cursor_box_size());
             
-            for_each(m_diagram_objects, function(object) {
+            m_diagram_objects.forEach(function(object) {
                 object.handle_cursor_move(cursor.as_read_only());
             });
             snap_last_object_to_guidelines();
@@ -208,10 +296,9 @@ function Model(cursor) {
     });
     
     m_bar_menu.push_entry("Draw", function() {
-        for_each(m_diagram_objects, function(object) {
+        m_diagram_objects.forEach(function(object) {
             object.disable_editing();
         });
-        console.log("draw");
         change_to_draw_mode(m_cursor_ref);
     });
     
@@ -306,7 +393,7 @@ function Model(cursor) {
                           m_cursor_box.width, m_cursor_box.height);
         }
         function draw_each_of(array) {
-            for_each(array, function(item) { item.draw(view); });
+            array.forEach(function(item) { item.draw(view); });
         }
         draw_each_of(m_diagram_objects);
 

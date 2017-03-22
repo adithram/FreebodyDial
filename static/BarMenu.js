@@ -20,7 +20,7 @@ function BarMenu() {
         if (m_entries.length === 0) return false;
         if (m_entries[0].bounds === undefined) return false;
         var rv = false;
-        for_each(m_entries, function(entry) {
+        m_entries.forEach(function(entry) {
             // ... reinventing the wheel?
             if (Vector.in_bounds(cursor, entry.bounds)) {
                 if (m_previous_press !== entry)
@@ -44,7 +44,7 @@ function BarMenu() {
         context.lineWidth = 1;
         context.strokeStyle = 'black';
         
-        for_each(m_entries, function(entry) {
+        m_entries.forEach(function(entry) {
             var entry_size = { x: context.measureText(entry.text).width,
                                y: parseInt(context.font) };
             // update entry bounds
