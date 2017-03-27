@@ -63,10 +63,19 @@ $(document).ready(function() {
     $(document).mouseup  (function(event) { g_app.mouse_release(); });
     //g_app.set_listen_target("/static/input.json");
 });
+
+function download(){
+    var download = document.getElementById("download");
+    var image = document.getElementById("main-canvas").toDataURL("image/png")
+                .replace("image/png", "image/octet-stream");
+    download.setAttribute("href", image);
+
+}
 </script>
 
 </head>
 <body>
+<a id="download" download="image.png"><button type="button" onClick="download()">Download</button></a>
 <canvas id="main-canvas"></canvas><!--<br />
 <span id="debug-message-1"></span><br />
 <span id="debug-message-2"></span>-->
