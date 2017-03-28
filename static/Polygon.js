@@ -27,11 +27,35 @@ function PolygonEndControlPoint(point_ref) {
 }
 */
 
+function Draggable() {
+    assert_new.check(this);
+    
+    var m_is_being_dragged = false;
+    
+    var within_point = function(parent_point, cursor_point) {
+        return Vector.mag(Vector.sub(parent_point, cursor_point)) < 10.0;
+    }
+    
+    this.is_being_dragged = function() { return m_is_being_dragged; }
+    
+    this.handle_draggable_cursor_click = function(cursor_obj, this_location) {
+        if (within_point(this_location, cursor_obj.location()) 
+            && cursor_obj.is_pressed()) 
+        {
+            m_is_being_dragged = true;
+        } else if (!cursor_obj.is_pressed() && m_is_being_dragged) {
+            m_is_being_dragged = false;
+        }
+    }
+}
+
 function PolygonTranslationControlPoint() {
     assert_new.check(this);
+    Draggable.call(this);
     
     var m_location = undefined;
     var m_old_location = undefined;
+    var self = this;
     
     this.set_location = function(array_of_points) {
         var v = { x: 0, y: 0 };
@@ -47,70 +71,71 @@ function PolygonTranslationControlPoint() {
     }
     
     this.handle_cursor_click = function(cursor_obj) {
-        ;
+        self.handle_draggable_cursor_click(cursor_obj, m_location);
     }
     
-    this.handle_cursor_move = function(cursor_obj) {
+    this.handle_cursor_move = function(cursor_obj, polygon_points) {
+        if (!self.is_being_dragged()) return;
         if (m_old_location === undefined)
             throw "set_location must be called before move events are handled";
-        var diff = Vector.sub(cursor_obj.location(), m_location);
-        
+        var displacement = Vector.sub(m_location, m_old_location);
+        m_old_location = m_location;
+        m_location = cursor_obj.location();
+        polygon_points.forEach(function(_, index, array) {
+            array[index] = Vector.add(array[index], displacement);
+        });
     }
     
     this.draw = function(context) {
         draw_bounds_as_black_outlined_box
-            (context, Vector.bounds_around(m_location), 'blue');
+            (context, Vector.bounds_around(m_location, { x: 10, y : 10 }), 'blue');
     }
 }
 
+PolygonTranslationControlPoint.prototype = Object.create(Draggable.prototype);
+PolygonTranslationControlPoint.prototype.constructor = PolygonTranslationControlPoint;
+
 function PolygonEndControlPoint() {
     assert_new.check(this);
+    Draggable.call(this);
+    
     // revealing the parent array seems to much to me
     // this dragging behavior may get a little clunky as a result
     
     var m_parent_point = undefined;
-    var m_is_being_dragged = false;
     var m_parent_index = undefined;
     var self = this;
     
-    var within_point = function(point) {
-        //console.log(m_parent_index+' >>> <'+point.x+', '+point.y+'> within? <'+m_parent_point.x+', '+m_parent_point.y+'> (diff:'+Vector.mag(Vector.sub(m_parent_point, point))+')');
-        return Vector.mag(Vector.sub(m_parent_point, point)) < 10.0;
+    
+    self.handle_cursor_click = function(cursor_obj) {
+        self.handle_draggable_cursor_click(cursor_obj, m_parent_point);
     }
     
-    this.handle_cursor_click = function(cursor_obj) {
-        //console.log(m_parent_index+' >>>'+(m_is_being_dragged ? "dragged" : "")+
-        //            " "+(cursor_obj.is_pressed() ? "press" : "release"))
-        if (within_point(cursor_obj.location()) && cursor_obj.is_pressed()) {
-            //console.log('point being dragged.');
-            m_is_being_dragged = true;
-        } else if (!cursor_obj.is_pressed() && m_is_being_dragged) {
-            //console.log('point released from mouse.');
-            m_is_being_dragged = false;
+    self.handle_cursor_move = function(cursor_obj, polygon_points) {
+        if (self.is_being_dragged()) {
+            m_parent_point = cursor_obj.location();
+            polygon_points[m_parent_index] = m_parent_point;
+        } else if (cursor_obj.is_pressed()) {
+            m_parent_point = polygon_points[m_parent_index];
         }
     }
     
-    this.handle_cursor_move = function(cursor_obj) {
-        if (!m_is_being_dragged) return;
-        m_parent_point = cursor_obj.location();
-    }
-    
-    this.set_parent_point = function(point, index) {
+    self.set_parent_point = function(point, index) {
         m_parent_point = point;
         m_parent_index = index;
     }
     
-    this.parent_index = function() { return m_parent_index; }
-    this.location = function() { return m_parent_point; }
-    this.is_being_dragged = function() { return m_is_being_dragged; }
+    self.location = function() { return m_parent_point; }
     
-    this.draw = function(context) {
+    self.draw = function(context) {
         if (m_parent_point === undefined) return;
         draw_bounds_as_black_outlined_box
             (context, Vector.bounds_around(m_parent_point, { x: 10, y: 10 }), 'yellow');
     }
 }
 
+PolygonEndControlPoint.prototype = Object.create(Draggable.prototype);
+PolygonEndControlPoint.prototype.constructor = PolygonEndControlPoint;
 
 // this will have different control points compared to other primitives
 // editing behaviors:
@@ -209,17 +234,20 @@ function Polygon() {
         m_control_points.forEach(function(control_point) {
             control_point.handle_cursor_click(cursor_obj);
         });
+        // note: assumes last is the translation control point
+        array_last(m_control_points).set_location(m_points);
     };
     
     var handle_cursor_move_editing = function(cursor_obj) {
         m_control_points.forEach(function(control_point) {
-            control_point.handle_cursor_move(cursor_obj);
-            if (control_point.is_being_dragged()) {
+            control_point.handle_cursor_move(cursor_obj, m_points);
+            
+            /*if (control_point.is_being_dragged()) {
                 m_points[control_point.parent_index()] = 
                     control_point.location();
                 //console.log('updating bounds...');
                 update_bounds();
-            }
+            }*/
         });
     }
     
@@ -243,11 +271,9 @@ function Polygon() {
         return self.draw === draw_while_editing_or_viewing; 
     }
     this.enable_editing = function() {
-        m_points.forEach(function(point, index, array) {
-            m_control_points.push(new PolygonEndControlPoint());
-            // effectively sets a reference
-            array_last(m_control_points).set_parent_point(array[index], index);
-        });
+        self.highlight();
+        m_control_points.push(new PolygonTranslationControlPoint());
+        array_last(m_control_points).set_location(m_points);
         self.handle_cursor_click = handle_cursor_click_editing;
         self.handle_cursor_move = handle_cursor_move_editing;
     }
@@ -256,4 +282,17 @@ function Polygon() {
         self.handle_cursor_move = self.handle_cursor_click = function(_){};
     }
     this.bounds = function() { return m_bounds; }
-}
+    this.point_within = function(cursor_loc, size) {
+        return Vector.in_bounds(cursor_loc, self.bounds());
+    }
+    this.highlight = function() {
+        m_points.forEach(function(point, index, array) {
+            m_control_points.push(new PolygonEndControlPoint());
+            // effectively sets a reference
+            array_last(m_control_points).set_parent_point(array[index], index);
+        });
+    }
+    this.unhighlight = function() {
+        m_control_points = [];
+    }
+} // end of Polygon

@@ -309,6 +309,7 @@ function Model(cursor) {
         m_candidate_group = [];
         cursor.reset_events();
         cursor.set_just_released_event(function() {
+            console.log('n.n');
             if (m_bar_menu.check_click(cursor.location()))
                 return;
             
@@ -332,7 +333,7 @@ function Model(cursor) {
         
         // ass convuluted...
         if (m_candidate_group !== undefined) {
-            for_each(m_candidate_group, function(item) {
+            m_candidate_group.forEach(function(item) {
                 item.unhighlight();
             });
             m_diagram_objects.push(new Group(m_candidate_group));
@@ -350,7 +351,7 @@ function Model(cursor) {
                 if (!object.point_within(cursor.location(), 10)) return false;
                 var gv = object.explode();
                 if (Array.isArray(gv)) {
-                    for_each(gv, function(obj) {
+                    gv.forEach(function(obj) {
                         ungrouped_items.push(obj);
                     });
                 } else {
@@ -359,7 +360,7 @@ function Model(cursor) {
                 return true;
             });
             assert_no_empties(ungrouped_items);
-            for_each(ungrouped_items, function(items) {
+            ungrouped_items.forEach(function(items) {
                 m_diagram_objects.push(items);
             });
             assert_no_empties(m_diagram_objects);
@@ -398,7 +399,7 @@ function Model(cursor) {
         draw_each_of(m_diagram_objects);
 
         if (m_candidate_group !== undefined) {
-            for_each(m_candidate_group, function(primitive) { primitive.draw(view); });
+            m_candidate_group.forEach(function(primitive) { primitive.draw(view); });
         }
         m_bar_menu.draw(view);
     }

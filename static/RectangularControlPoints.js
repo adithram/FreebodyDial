@@ -17,7 +17,7 @@ function RectangularControlPoints(top_left, bottom_right) {
         draw_bounds_as_black_outlined_box(context, cp_bounds, fill_color);
     }
     this.draw = function(context) {
-        for_each(m_bounds_points, function(bounds_point) {
+        m_bounds_points.forEach(function(bounds_point) {
             draw_bounds(context, bounds_around(bounds_point), 'yellow');
         });
         draw_bounds(context, bounds_around(m_move_point), 'blue');
