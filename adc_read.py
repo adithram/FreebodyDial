@@ -114,7 +114,7 @@ while True:
                     headers = {'content-type': 'application/json'}
                     r = requests.post(url, data=json.dumps(data), headers=headers)
 
-                else if 128 <= trim_pot < 256:
+                elif 128 <= trim_pot < 256:
                     print "Northeast\n"
                     data = {}
                     data['direction'] = 'northeast'
@@ -122,7 +122,7 @@ while True:
                     url = ''
                     headers = {'content-type': 'application/json'}
                     r = requests.post(url, data=json.dumps(data), headers=headers)
-                else if 256 <= trim_pot < 384:
+                elif 256 <= trim_pot < 384:
                     print "East\n"
                     data = {}
                     data['direction'] = 'east'
@@ -130,7 +130,7 @@ while True:
                     url = ''
                     headers = {'content-type': 'application/json'}
                     r = requests.post(url, data=json.dumps(data), headers=headers)
-                else if 384 <= trim_pot < 512:
+                elif 384 <= trim_pot < 512:
                     print "Southeast\n"
                     data = {}
                     data['direction'] = 'southeast'
@@ -138,7 +138,7 @@ while True:
                     url = ''
                     headers = {'content-type': 'application/json'}
                     r = requests.post(url, data=json.dumps(data), headers=headers)
-                else if 512 <= trim_pot < 640:
+                elif 512 <= trim_pot < 640:
                     print "South\n"
                     data = {}
                     data['direction'] = 'south'
@@ -146,7 +146,7 @@ while True:
                     url = ''
                     headers = {'content-type': 'application/json'}
                     r = requests.post(url, data=json.dumps(data), headers=headers)
-                else if 640 <= trim_pot < 768:
+                elif 640 <= trim_pot < 768:
                     print "Southwest\n"
                     data = {}
                     data['direction'] = 'southwest'
@@ -154,7 +154,7 @@ while True:
                     url = ''
                     headers = {'content-type': 'application/json'}
                     r = requests.post(url, data=json.dumps(data), headers=headers)
-                else if 768 <= trim_pot < 896:
+                elif 768 <= trim_pot < 896:
                     print "West\n"
                     data = {}
                     data['direction'] = 'west'
