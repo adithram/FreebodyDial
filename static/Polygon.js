@@ -26,6 +26,43 @@ function PolygonEndControlPoint(point_ref) {
     }
 }
 */
+
+function PolygonTranslationControlPoint() {
+    assert_new.check(this);
+    
+    var m_location = undefined;
+    var m_old_location = undefined;
+    
+    this.set_location = function(array_of_points) {
+        var v = { x: 0, y: 0 };
+        var count = 0;
+        array_of_points.forEach(function(point) {
+            v.x += point.x;
+            v.y += point.y;
+            ++count;
+        });
+        v.x /= count;
+        v.y /= count;
+        m_old_location = m_location = v;
+    }
+    
+    this.handle_cursor_click = function(cursor_obj) {
+        ;
+    }
+    
+    this.handle_cursor_move = function(cursor_obj) {
+        if (m_old_location === undefined)
+            throw "set_location must be called before move events are handled";
+        var diff = Vector.sub(cursor_obj.location(), m_location);
+        
+    }
+    
+    this.draw = function(context) {
+        draw_bounds_as_black_outlined_box
+            (context, Vector.bounds_around(m_location), 'blue');
+    }
+}
+
 function PolygonEndControlPoint() {
     assert_new.check(this);
     // revealing the parent array seems to much to me
