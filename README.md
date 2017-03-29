@@ -4,6 +4,9 @@
 # FreebodyDial
 Dial for free body diagram design. Designed for usability regardless of user disability. 
 
+# Beta Release Instructions
+- Launch canvas.html located in the templates directory. 
+
 # Alpha Release Instructions
 - A terminal application has been designed to show sample user interaction and the creation/usage of JSON objects. The application lets the user interact through the keyboard describing movement. The keyboard functionality corresponds to movements that will eventually occur through a dial peripheral. The keyboard application will generate JSON objects. 
 
