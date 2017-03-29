@@ -273,6 +273,13 @@ function Model(cursor) {
             m_cursor_box = Vector.bounds_around(cursor.location(), cursor_box_size());
         });
     });
+
+    m_bar_menu.push_entry("Polygon", function(){
+        console.log("Undo!");
+        // Remove the latest line added to m_lines
+        m_last_undone_object = array_last(m_diagram_objects);
+        m_diagram_objects.pop();
+    });
     
     m_bar_menu.push_entry("Undo", function(){
         console.log("Undo!");
@@ -280,6 +287,35 @@ function Model(cursor) {
         m_last_undone_object = array_last(m_diagram_objects);
         m_diagram_objects.pop();
     });
+
+    m_bar_menu.push_entry("Save", function(){
+        var id = 'main-canvas';
+        var currentdate = new Date(); 
+        var datetime = currentdate.getDate() + "-"
+                + (currentdate.getMonth()+1)  + "-" 
+                + currentdate.getFullYear() + "-"  
+                + currentdate.getHours() + "-"  
+                + currentdate.getMinutes() + "-" 
+                + currentdate.getSeconds();
+        var fileName = 'canvas_' + datetime.toString();
+
+        var canvasElement = document.getElementById(id);
+
+        var MIME_TYPE = "image/png";
+
+        var imgURL = canvasElement.toDataURL(MIME_TYPE);
+
+        var dlLink = document.createElement('a');
+        dlLink.download = fileName;
+        dlLink.href = imgURL;
+        dlLink.dataset.downloadurl = [MIME_TYPE, dlLink.download, dlLink.href].join(':');
+
+        document.body.appendChild(dlLink);
+        dlLink.click();
+        document.body.removeChild(dlLink);
+    });
+
+
 
     /*m_bar_menu.push_entry("Redo", function(){
         console.log("Redo");

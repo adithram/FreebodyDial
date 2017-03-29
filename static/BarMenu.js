@@ -37,6 +37,11 @@ function BarMenu() {
     // much easier and allow fancier graphics
     // this function DOES modify the state of the object
     this.draw = function(context) {
+
+        // 7 objects
+
+
+
         var draw_position = deepcopy(m_location);
         // javascript function to find width of the page / 7
         var window_width = $(window).width();
