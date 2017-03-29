@@ -38,14 +38,18 @@ function BarMenu() {
     // this function DOES modify the state of the object
     this.draw = function(context) {
         var draw_position = deepcopy(m_location);
+        // javascript function to find width of the page / 7
+        var window_width = $(window).width();
+        var window_height = $(window).height();
         
         m_size = zero_vect();
-        context.font = "28px Arial";
+        context.font = (window_height/18)+"px Arial";
         context.lineWidth = 1;
         context.strokeStyle = 'black';
         
+        var count = 0;
         m_entries.forEach(function(entry) {
-            var entry_size = { x: context.measureText(entry.text).width,
+            var entry_size = { x: window_width / m_entries.length, // why seven ? //context.measureText(entry.text).width,
                                y: parseInt(context.font) };
             // update entry bounds
             entry.bounds = { x    : draw_position.x, y     : draw_position.y,
@@ -55,15 +59,21 @@ function BarMenu() {
             context.beginPath();
             if (m_previous_press === entry) {
                 context.fillStyle = 'yellow';
-                context.fillRect(draw_position.x, draw_position.y, entry_size.x, entry_size.y);
+                context.fillRect(draw_position.x, draw_position.y, entry_size.x, entry_size.y + window_height/12);
             } else {
-                context.rect(draw_position.x, draw_position.y, entry_size.x, entry_size.y);
+                context.rect(draw_position.x, draw_position.y, entry_size.x, entry_size.y + window_height/12);
             }
             context.stroke();
             
             // entry text
             context.fillStyle = 'black';
-            context.fillText(entry.text, draw_position.x, draw_position.y + entry_size.y)
+            
+            var text_width = context.measureText(entry.text).width;
+            var box_width = window_width/7;
+            var position =  ((box_width - text_width)/2) + (box_width * count)
+            //++count;
+            
+            context.fillText(entry.text, draw_position.x + position, draw_position.y + entry_size.y)
             
             m_size.x += entry_size.x;
             draw_position.x += entry_size.x;

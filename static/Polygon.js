@@ -106,7 +106,6 @@ function PolygonEndControlPoint() {
     var m_parent_index = undefined;
     var self = this;
     
-    
     self.handle_cursor_click = function(cursor_obj) {
         self.handle_draggable_cursor_click(cursor_obj, m_parent_point);
     }
@@ -226,11 +225,28 @@ function Polygon() {
     }
     
     /***************************************************************************
+     *             Helper functions for editing the Polygon
+     **************************************************************************/
+    
+    var check_point_merging = function(index) {
+        var cpt = m_control_points[index].location();
+        var check_neighbor_for_merge = function(offset) {
+            var np = m_control_points[index + offset].location();
+            if (Vector.mag(Vector.sub(np, cpt)) < 10) {
+                m_control_points.splice(index, 1);
+                m_points.splice(index, 1);
+                console.log('spliced polygon'+m_points.length);
+            }
+        };
+        if (index > 0) check_neighbor_for_merge(-1);
+        if (index < m_points.length - 1) check_neighbor_for_merge(1);
+    }
+    
+    /***************************************************************************
      *             Functions used while editing the Polygon
      **************************************************************************/
     
     var handle_cursor_click_editing = function(cursor_obj) {
-        if (!Vector.in_bounds(cursor_obj.location(), m_bounds)) return;
         m_control_points.forEach(function(control_point) {
             control_point.handle_cursor_click(cursor_obj);
         });
@@ -239,15 +255,14 @@ function Polygon() {
     };
     
     var handle_cursor_move_editing = function(cursor_obj) {
-        m_control_points.forEach(function(control_point) {
+        m_control_points.forEach(function(control_point, index) {
+            var was_dragged = control_point.is_being_dragged();
             control_point.handle_cursor_move(cursor_obj, m_points);
             
-            /*if (control_point.is_being_dragged()) {
-                m_points[control_point.parent_index()] = 
-                    control_point.location();
-                //console.log('updating bounds...');
-                update_bounds();
-            }*/
+            // check if two points merged
+            if (was_dragged && !control_point.is_being_dragged()) {
+                check_point_merging(index);
+            }
         });
     }
     
@@ -295,4 +310,5 @@ function Polygon() {
     this.unhighlight = function() {
         m_control_points = [];
     }
+    this.explode = function() { return this; }
 } // end of Polygon
