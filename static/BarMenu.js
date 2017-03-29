@@ -24,7 +24,7 @@ function BarMenu() {
             // ... reinventing the wheel?
             if (Vector.in_bounds(cursor, entry.bounds)) {
                 if (m_previous_press !== entry)
-                    entry.callback();
+                    entry.callback(entry);
                 m_previous_press = entry;
                 rv = true;
                 return true; // breaks out of for_each
