@@ -257,6 +257,8 @@ function Line() {
         return (dist <= distance_limit);
     }
 
+    this.finished_creating = function() { return true; }
+
     /** While the Line is being pulled (as part of its creation) or edited;
      *  snap_to_guideline will add a snapping effect allowing for more 
      *  consistent diagrams.

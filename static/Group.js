@@ -48,7 +48,7 @@ function Group(sub_items) {
     }
     
     this.draw = function(context) { 
-        for_each(m_sub_items, function(item) { item.draw(context); });
+        m_sub_items.forEach(function(item) { item.draw(context); });
         if (m_control_points === undefined) return;
         m_control_points.draw(context);
     }

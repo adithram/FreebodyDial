@@ -43,22 +43,19 @@ function BarMenu() {
 
 
         var draw_position = deepcopy(m_location);
+        // javascript function to find width of the page / 7
+        var window_width = $(window).width();
+        var window_height = $(window).height();
         
         m_size = zero_vect();
-        var webpage_width = $(window).width();
-        var webpage_height = $(window).height();
-        var font_size = webpage_height / 18
-        context.font = font_size + "px Arial";
+        context.font = (window_height/18)+"px Arial";
         context.lineWidth = 1;
         context.strokeStyle = 'black';
         
+        var count = 0;
         m_entries.forEach(function(entry) {
-
-            // javascript function to find width of the page / 7
-            var window_width = $(window).width();
-            var window_height = $(window).height();
-            var entry_size = { x: window_width/7,
-                               y: parseInt(context.font) + 50 };
+            var entry_size = { x: window_width / m_entries.length, // why seven ? //context.measureText(entry.text).width,
+                               y: parseInt(context.font) };
             // update entry bounds
             entry.bounds = { x    : draw_position.x, y     : draw_position.y,
                              width: entry_size.x   , height: entry_size.y    };
@@ -75,17 +72,13 @@ function BarMenu() {
             
             // entry text
             context.fillStyle = 'black';
-
-            var count = 0;
+            
             var text_width = context.measureText(entry.text).width;
             var box_width = window_width/7;
-
-
             var position =  ((box_width - text_width)/2) + (box_width * count)
-
-            count = count + 1;
+            //++count;
+            
             context.fillText(entry.text, draw_position.x + position, draw_position.y + entry_size.y)
-
             
             m_size.x += entry_size.x;
             draw_position.x += entry_size.x;
