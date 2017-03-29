@@ -6,6 +6,9 @@ Dial for free body diagram design. Designed for usability regardless of user dis
 
 # Beta Release Instructions
 - Launch canvas.html located in the templates directory. 
+- When editing: Line up square next to cursor with square near object to manipulate;
+- When drawing polygons: To close polygon return cursor to starting point and click.
+- When grouping: select lines, by clicking with pointer, you desire to group and hit done grouping when completed. Results will be seen if you click edit. 
 
 # Alpha Release Instructions
 - A terminal application has been designed to show sample user interaction and the creation/usage of JSON objects. The application lets the user interact through the keyboard describing movement. The keyboard functionality corresponds to movements that will eventually occur through a dial peripheral. The keyboard application will generate JSON objects. 
