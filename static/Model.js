@@ -154,11 +154,15 @@ function Model(cursor) {
         });
     }
     
-    m_bar_menu.push_entry("Edit", function() {
+    m_bar_menu.push_entry("Edit", function(entry) {
         m_diagram_objects.forEach(function(object) { 
             object.enable_editing();
         });
-        console.log("edit");
+        entry.on_mode_exit = function () {
+            m_diagram_objects.forEach(function(object) { 
+                object.disable_editing();
+            });
+        };
 
         cursor.set_just_clicked_event(function() {
             if (m_bar_menu.check_click(cursor.location()))
@@ -192,38 +196,49 @@ function Model(cursor) {
     });
     
     m_bar_menu.push_entry("Draw", function() {
-        m_diagram_objects.forEach(function(object) {
-            object.disable_editing();
-        });
         change_to_draw_mode(function() { return new Line() });
     });
+    m_bar_menu.set_last_added_entry_as_default();
     
     m_bar_menu.push_entry("Polygon", function() {
-        m_diagram_objects.forEach(function(object) {
-            object.disable_editing();
-        });
         change_to_draw_mode(function() { return new Polygon() });
     });
     
     var finish_grouping = function() {
-        if (m_candidate_group !== undefined) {
-            m_candidate_group.forEach(function(item) {
-                item.unhighlight();
-            });
-            m_diagram_objects.push(new Group(m_candidate_group));
+        if (m_candidate_group === undefined) return;
+        
+        // candidate groups with one member -> is already a 'group'
+        if (m_candidate_group.length === 1) {
+            m_diagram_objects.push(m_candidate_group[0]);
             m_candidate_group = undefined;
+            return;
         }
+        
+        // usual grouping behavior
+        m_candidate_group.forEach(function(item) {
+            item.unhighlight();
+        });
+        m_diagram_objects.push(new Group(m_candidate_group));
+        m_candidate_group = undefined;
     }
     
     var m_candidate_group = undefined;
     var m_groups = [];
-    m_bar_menu.push_entry("Group", function() {
-        m_diagram_objects.forEach(function(object) { 
-            object.enable_editing();
-        });
+    m_bar_menu.push_entry("Group", function(entry) {
         var cursor = m_cursor_ref;
         m_candidate_group = [];
         cursor.reset_events();
+
+        entry.on_mode_exit = function () {
+            console.log('Left grouping mode.');
+            m_candidate_group.forEach(function(object) {
+                m_diagram_objects.push(object);
+            });
+            m_diagram_objects.forEach(function(object) {
+                object.unhighlight();
+            });
+            m_candidate_group = undefined;
+        }
         cursor.set_just_released_event(function() {
             if (m_bar_menu.check_click(cursor.location()))
                 return;
@@ -244,9 +259,6 @@ function Model(cursor) {
     });
     
     m_bar_menu.push_entry("Group Done", function() {
-        m_diagram_objects.forEach(function(object) { 
-            object.enable_editing();
-        });
         var cursor = m_cursor_ref;
         
         finish_grouping();
@@ -316,31 +328,26 @@ function Model(cursor) {
         document.body.removeChild(dlLink);
     });
 
-
-
     /*m_bar_menu.push_entry("Redo", function(){
         console.log("Redo");
         m_lines.push(last_undone_line);
         last_undone_line = new Line();
     });*/
     
-    change_to_draw_mode(function() { return new Line(); });
-    
     this.render_to = function(view) {
         // view is a draw context object
         view.fillStyle = "#000";
-        if (m_cursor_box !== undefined) {
-            view.fillRect(m_cursor_box.x    , m_cursor_box.y,
-                          m_cursor_box.width, m_cursor_box.height);
-        }
         function draw_each_of(array) {
             array.forEach(function(item) { item.draw(view); });
         }
         draw_each_of(m_diagram_objects);
-
         if (m_candidate_group !== undefined) {
-            m_candidate_group.forEach(function(primitive) { primitive.draw(view); });
+            draw_each_of(m_candidate_group);
         }
         m_bar_menu.draw(view);
+        if (m_cursor_box !== undefined) {
+            view.fillRect(m_cursor_box.x    , m_cursor_box.y,
+                          m_cursor_box.width, m_cursor_box.height);
+        }
     }
 }
