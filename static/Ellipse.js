@@ -8,6 +8,7 @@ function Ellipse() {
     var m_first_point = undefined;
     var m_finished_creating = false;
     var self = this;
+    
     this.set_location = function(x_, y_) { m_location = { x: x_, y: y_ }; }
     this.set_radii = function(x_, y_) { m_radii = { x: x_, y: y_ }; }
     this.finished_creating = function() { return m_finished_creating; }
@@ -83,7 +84,7 @@ function Ellipse() {
         context.translate(m_location.x, m_location.y);
         context.scale    (m_radii.x   , m_radii.y   );
         
-        // draw circle which will be stretched into an oval
+        // draw circle which will be stretched into a proper Ellipse
         context.beginPath();
         context.arc(0, 0, 1, 0, 2*Math.PI, false);
         

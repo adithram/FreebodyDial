@@ -33,8 +33,6 @@ function MouseAdapter() {
     var m_mouse_location = zero_vect();
     var m_mouse_pressed = false;
     this.update_location = function(loc) {
-        loc.x -= 10;
-        loc.y -= 10;
         m_mouse_location = loc;
     }
     this.update_cursor = function(cursor, et) {

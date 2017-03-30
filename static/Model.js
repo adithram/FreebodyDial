@@ -28,7 +28,7 @@
     function get_object_name(obj) {
         return (/^function(.{1,})\(/).exec(obj.constructor.toString())[1];
     }
-    [new Line(), new Group([]), new Polygon].forEach(function(obj) {
+    [new Line(), new Group([]), new Polygon, new Ellipse].forEach(function(obj) {
         var gv = find_missing_function(obj);
         if (gv !== "") {
             throw get_object_name(obj) + " does not have a required " + 
@@ -165,7 +165,7 @@ function Model(cursor) {
                 return;
             m_diagram_objects.forEach(function(object) {
                 object.handle_cursor_click(cursor.as_read_only());
-            });            
+            });
         });
         
         cursor.set_just_released_event(function() {
@@ -205,14 +205,26 @@ function Model(cursor) {
         change_to_draw_mode(function() { return new Polygon() });
     });
     
+    var finish_grouping = function() {
+        if (m_candidate_group !== undefined) {
+            m_candidate_group.forEach(function(item) {
+                item.unhighlight();
+            });
+            m_diagram_objects.push(new Group(m_candidate_group));
+            m_candidate_group = undefined;
+        }
+    }
+    
     var m_candidate_group = undefined;
     var m_groups = [];
     m_bar_menu.push_entry("Group", function() {
+        m_diagram_objects.forEach(function(object) { 
+            object.enable_editing();
+        });
         var cursor = m_cursor_ref;
         m_candidate_group = [];
         cursor.reset_events();
         cursor.set_just_released_event(function() {
-            console.log('n.n');
             if (m_bar_menu.check_click(cursor.location()))
                 return;
             
@@ -232,16 +244,12 @@ function Model(cursor) {
     });
     
     m_bar_menu.push_entry("Ungroup", function() {
+        m_diagram_objects.forEach(function(object) { 
+            object.enable_editing();
+        });
         var cursor = m_cursor_ref;
         
-        // ass convuluted...
-        if (m_candidate_group !== undefined) {
-            m_candidate_group.forEach(function(item) {
-                item.unhighlight();
-            });
-            m_diagram_objects.push(new Group(m_candidate_group));
-            m_candidate_group = undefined;
-        }
+        finish_grouping();
         
         cursor.reset_events();
         cursor.set_just_released_event(function() {
@@ -273,14 +281,7 @@ function Model(cursor) {
             m_cursor_box = Vector.bounds_around(cursor.location(), cursor_box_size());
         });
     });
-
-    m_bar_menu.push_entry("Polygon", function(){
-        console.log("Undo!");
-        // Remove the latest line added to m_lines
-        m_last_undone_object = array_last(m_diagram_objects);
-        m_diagram_objects.pop();
-    });
-    
+        
     m_bar_menu.push_entry("Undo", function(){
         console.log("Undo!");
         // Remove the latest line added to m_lines

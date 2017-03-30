@@ -215,13 +215,32 @@ function Polygon() {
     
     var draw_while_creating = function(context) {
         // initial draw function while the polygon object is being created
+        var save_restore = function(context, func) {
+            context.save();
+            func();
+            context.restore();
+        };
         for (var i = 0; i !== m_points.length - 1; ++i)
             draw_line_from_index(context, i);
         if (m_points.length !== 0 && m_candidate_point !== undefined) {
             draw_line(context, array_last(m_points), m_candidate_point);
             draw_line(context, m_candidate_point   , m_points[0]      );
         }
-
+        if (m_points.length !== 0) {
+            var radius = 5;
+            var pt = m_points[0];
+            save_restore(context, function() {
+                context.beginPath();
+                context.arc(pt.x - radius, pt.y - radius, radius, 0, 2*Math.PI, false);
+                
+                // apply styling
+                context.font = '12pt Verdana';
+                context.fillText("Click here to finish drawing.", pt.x, pt.y);
+                context.lineWidth = 3;
+                context.strokeStyle = 'red';
+                context.stroke();
+            });
+        }
     }
     
     /***************************************************************************
