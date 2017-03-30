@@ -48,7 +48,7 @@ function BarMenu() {
         var window_height = $(window).height();
         
         m_size = zero_vect();
-        context.font = (window_height/18)+"px Arial";
+        context.font = (window_height/22)+"px Arial";
         context.lineWidth = 1;
         context.strokeStyle = 'black';
         
@@ -78,7 +78,7 @@ function BarMenu() {
             var position =  ((box_width - text_width)/2) + (box_width * count)
             //++count;
             
-            context.fillText(entry.text, draw_position.x + position, draw_position.y + entry_size.y)
+            context.fillText(entry.text, draw_position.x + position, draw_position.y + entry_size.y + window_height/28)
             
             m_size.x += entry_size.x;
             draw_position.x += entry_size.x;

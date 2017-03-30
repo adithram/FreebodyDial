@@ -243,7 +243,7 @@ function Model(cursor) {
         });
     });
     
-    m_bar_menu.push_entry("Ungroup", function() {
+    m_bar_menu.push_entry("Group Done", function() {
         m_diagram_objects.forEach(function(object) { 
             object.enable_editing();
         });
@@ -324,7 +324,7 @@ function Model(cursor) {
         last_undone_line = new Line();
     });*/
     
-    change_to_draw_mode(function() { return new Polygon(); });
+    change_to_draw_mode(function() { return new Line(); });
     
     this.render_to = function(view) {
         // view is a draw context object
