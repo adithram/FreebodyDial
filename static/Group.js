@@ -67,4 +67,5 @@ function Group(sub_items) {
     this.disable_editing = function () {
         this.unhighlight();
     }
+    this.finished_creating = function() { return true; }
 }
