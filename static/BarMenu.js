@@ -1,7 +1,9 @@
 "use strict";
+
 /** Represents a 'quick and dirty' menu. For prototyping purposes. Hopefully
  *  we can use HTML to create a more professional interface.
  * 
+ *  Which didn't seem to have happened :c
  */
 function BarMenu() {
     assert_new.check(this);
@@ -11,9 +13,29 @@ function BarMenu() {
     // will have to be constant relative to the diagram
     var m_location = zero_vect();
     var m_size     = zero_vect();
+    var self = this;
+    
+    var handle_click_inside = function(entry) {
+        if (m_previous_press !== entry) {
+            if (m_previous_press !== undefined)
+                m_previous_press.on_mode_exit(entry);
+            entry.callback(entry);
+        }
+        m_previous_press = entry;
+    }
     
     this.push_entry = function(text_, callback_) {
-        m_entries.push({ text: text_, callback: callback_ });
+        m_entries.push({ text: text_, callback: callback_,
+                         on_mode_exit: function(_){} });
+        return self;
+    }
+    
+    this.set_last_added_entry_as_default = function() {
+        if (m_previous_press !== undefined) {
+            throw "Already set default menu entry!";
+        }
+        array_last(m_entries).callback(array_last(m_entries));
+        m_previous_press = array_last(m_entries);
     }
     
     this.check_click = function(cursor) {
@@ -21,13 +43,10 @@ function BarMenu() {
         if (m_entries[0].bounds === undefined) return false;
         var rv = false;
         m_entries.forEach(function(entry) {
-            // ... reinventing the wheel?
             if (Vector.in_bounds(cursor, entry.bounds)) {
-                if (m_previous_press !== entry)
-                    entry.callback();
-                m_previous_press = entry;
-                rv = true;
-                return true; // breaks out of for_each
+                handle_click_inside(entry);
+                rv = true;   // for entire member function
+                return true; // breaks out of forEach
             }
         });
         return rv;
@@ -38,9 +57,7 @@ function BarMenu() {
     // this function DOES modify the state of the object
     this.draw = function(context) {
 
-        // 7 objects
-
-
+        // n objects n.-
 
         var draw_position = deepcopy(m_location);
         // javascript function to find width of the page / 7
@@ -48,14 +65,13 @@ function BarMenu() {
         var window_height = $(window).height();
         
         m_size = zero_vect();
-        context.font = (window_height/18)+"px Arial";
+        context.font = (window_height / 22)+"px Arial";
         context.lineWidth = 1;
         context.strokeStyle = 'black';
         
-        var count = 0;
-        m_entries.forEach(function(entry) {
-            var entry_size = { x: window_width / m_entries.length, // why seven ? //context.measureText(entry.text).width,
-                               y: parseInt(context.font) };
+        m_entries.forEach(function(entry) { 
+            var entry_size = { x: window_width / m_entries.length,
+                               y: parseInt(context.font) + window_height / 12 };
             // update entry bounds
             entry.bounds = { x    : draw_position.x, y     : draw_position.y,
                              width: entry_size.x   , height: entry_size.y    };
@@ -64,25 +80,26 @@ function BarMenu() {
             context.beginPath();
             if (m_previous_press === entry) {
                 context.fillStyle = 'yellow';
-                context.fillRect(draw_position.x, draw_position.y, entry_size.x, entry_size.y + window_height/12);
             } else {
-                context.rect(draw_position.x, draw_position.y, entry_size.x, entry_size.y + window_height/12);
+                context.fillStyle = 'white';
             }
+            context.fillRect(draw_position.x, draw_position.y, entry_size.x, entry_size.y);
+            context.rect(draw_position.x, draw_position.y, entry_size.x, entry_size.y);
             context.stroke();
             
             // entry text
             context.fillStyle = 'black';
             
             var text_width = context.measureText(entry.text).width;
-            var box_width = window_width/7;
-            var position =  ((box_width - text_width)/2) + (box_width * count)
-            //++count;
+            var box_width = window_width / m_entries.length;
+            var position =  (box_width - text_width) / 2;
             
-            context.fillText(entry.text, draw_position.x + position, draw_position.y + entry_size.y)
+            context.fillText(entry.text, 
+                             draw_position.x + position, 
+                             draw_position.y + entry_size.y / 2)
             
             m_size.x += entry_size.x;
             draw_position.x += entry_size.x;
         });
-        
     }
 }

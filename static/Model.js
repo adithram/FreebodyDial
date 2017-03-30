@@ -28,7 +28,11 @@
     function get_object_name(obj) {
         return (/^function(.{1,})\(/).exec(obj.constructor.toString())[1];
     }
+<<<<<<< HEAD
     [new Line(), new Group([])].forEach(function(obj) {
+=======
+    [new Line(), new Group([]), new Polygon, new Ellipse].forEach(function(obj) {
+>>>>>>> b04bf6a25afa53726401442ebd3a5dd138694b51
         var gv = find_missing_function(obj);
         if (gv !== "") {
             throw get_object_name(obj) + " does not have a required " + 
@@ -258,18 +262,22 @@ function Model(cursor) {
         });
     }
     
-    m_bar_menu.push_entry("Edit", function() {
+    m_bar_menu.push_entry("Edit", function(entry) {
         m_diagram_objects.forEach(function(object) { 
             object.enable_editing();
         });
-        console.log("edit");
+        entry.on_mode_exit = function () {
+            m_diagram_objects.forEach(function(object) { 
+                object.disable_editing();
+            });
+        };
 
         cursor.set_just_clicked_event(function() {
             if (m_bar_menu.check_click(cursor.location()))
                 return;
             m_diagram_objects.forEach(function(object) {
                 object.handle_cursor_click(cursor.as_read_only());
-            });            
+            });
         });
         
         cursor.set_just_released_event(function() {
@@ -296,18 +304,56 @@ function Model(cursor) {
     });
     
     m_bar_menu.push_entry("Draw", function() {
+<<<<<<< HEAD
         m_diagram_objects.forEach(function(object) {
             object.disable_editing();
         });
         change_to_draw_mode(m_cursor_ref);
+=======
+        change_to_draw_mode(function() { return new Line() });
     });
+    m_bar_menu.set_last_added_entry_as_default();
+    
+    m_bar_menu.push_entry("Polygon", function() {
+        change_to_draw_mode(function() { return new Polygon() });
+>>>>>>> b04bf6a25afa53726401442ebd3a5dd138694b51
+    });
+    
+    var finish_grouping = function() {
+        if (m_candidate_group === undefined) return;
+        
+        // candidate groups with one member -> is already a 'group'
+        if (m_candidate_group.length === 1) {
+            m_diagram_objects.push(m_candidate_group[0]);
+            m_candidate_group = undefined;
+            return;
+        }
+        
+        // usual grouping behavior
+        m_candidate_group.forEach(function(item) {
+            item.unhighlight();
+        });
+        m_diagram_objects.push(new Group(m_candidate_group));
+        m_candidate_group = undefined;
+    }
     
     var m_candidate_group = undefined;
     var m_groups = [];
-    m_bar_menu.push_entry("Group", function() {
+    m_bar_menu.push_entry("Group", function(entry) {
         var cursor = m_cursor_ref;
         m_candidate_group = [];
         cursor.reset_events();
+
+        entry.on_mode_exit = function () {
+            console.log('Left grouping mode.');
+            m_candidate_group.forEach(function(object) {
+                m_diagram_objects.push(object);
+            });
+            m_diagram_objects.forEach(function(object) {
+                object.unhighlight();
+            });
+            m_candidate_group = undefined;
+        }
         cursor.set_just_released_event(function() {
             if (m_bar_menu.check_click(cursor.location()))
                 return;
@@ -327,9 +373,10 @@ function Model(cursor) {
         });
     });
     
-    m_bar_menu.push_entry("Ungroup", function() {
+    m_bar_menu.push_entry("Group Done", function() {
         var cursor = m_cursor_ref;
         
+<<<<<<< HEAD
         // ass convuluted...
         if (m_candidate_group !== undefined) {
             for_each(m_candidate_group, function(item) {
@@ -338,6 +385,9 @@ function Model(cursor) {
             m_diagram_objects.push(new Group(m_candidate_group));
             m_candidate_group = undefined;
         }
+=======
+        finish_grouping();
+>>>>>>> b04bf6a25afa53726401442ebd3a5dd138694b51
         
         cursor.reset_events();
         cursor.set_just_released_event(function() {
@@ -369,14 +419,7 @@ function Model(cursor) {
             m_cursor_box = Vector.bounds_around(cursor.location(), cursor_box_size());
         });
     });
-
-    m_bar_menu.push_entry("Polygon", function(){
-        console.log("Undo!");
-        // Remove the latest line added to m_lines
-        m_last_undone_object = array_last(m_diagram_objects);
-        m_diagram_objects.pop();
-    });
-    
+        
     m_bar_menu.push_entry("Undo", function(){
         console.log("Undo!");
         // Remove the latest line added to m_lines
@@ -437,31 +480,35 @@ function Model(cursor) {
         document.body.removeChild(dlLink);
     });
 
-
-
     /*m_bar_menu.push_entry("Redo", function(){
         console.log("Redo");
         m_lines.push(last_undone_line);
         last_undone_line = new Line();
     });*/
     
+<<<<<<< HEAD
     change_to_draw_mode();
     
+=======
+>>>>>>> b04bf6a25afa53726401442ebd3a5dd138694b51
     this.render_to = function(view) {
         // view is a draw context object
         view.fillStyle = "#000";
-        if (m_cursor_box !== undefined) {
-            view.fillRect(m_cursor_box.x    , m_cursor_box.y,
-                          m_cursor_box.width, m_cursor_box.height);
-        }
         function draw_each_of(array) {
             array.forEach(function(item) { item.draw(view); });
         }
         draw_each_of(m_diagram_objects);
-
         if (m_candidate_group !== undefined) {
+<<<<<<< HEAD
             for_each(m_candidate_group, function(primitive) { primitive.draw(view); });
+=======
+            draw_each_of(m_candidate_group);
+>>>>>>> b04bf6a25afa53726401442ebd3a5dd138694b51
         }
         m_bar_menu.draw(view);
+        if (m_cursor_box !== undefined) {
+            view.fillRect(m_cursor_box.x    , m_cursor_box.y,
+                          m_cursor_box.width, m_cursor_box.height);
+        }
     }
 }

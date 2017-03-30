@@ -1,0 +1,52 @@
+*{
+    margin: 0;
+    padding: 0;
+    line-height: 1;    
+}
+h1 {
+     font-family: Arial;
+     font-size: 1px;
+     font-weight: bold;
+     color: black;
+     text-align:;
+     width: 100%;
+     float: center;
+     margin: 0 0 0 0;
+     padding: 0;
+     list-style: none;
+ }
+ body {
+     color: white;
+     font-family: Arial;
+     font-size: 20px;
+     margin: 0 0 0 0;
+     max-width: 100%;
+ }
+ /* Navigation Bar Styling */
+ nav {
+     margin: 0 0 0 0;
+     font-family: Arial;
+     font-size: 100%;
+    width: 100%;
+    overflow: hidden;
+ }
+ nav ul{
+     list-style: none;
+ }
+ nav ul li {
+     float: left;
+    width: 20%;
+ }
+ nav li a {
+     background-color: black;
+     display: block;
+     padding: 0 0;
+     text-decoration: none;
+     font-weight: bold;
+     color: white;
+     border-right: 1px solid gray;
+ }
+ nav li a:hover {
+     color: black;
+     background-color: white;
+ }
