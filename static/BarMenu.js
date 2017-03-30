@@ -18,7 +18,7 @@ function BarMenu() {
     var handle_click_inside = function(entry) {
         if (m_previous_press !== entry) {
             if (m_previous_press !== undefined)
-                m_previous_press.on_mode_exit(entry);
+                m_previous_press.on_mode_exit(entry, m_previous_press);
             entry.callback(entry);
         }
         m_previous_press = entry;

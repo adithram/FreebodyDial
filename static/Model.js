@@ -113,6 +113,10 @@ function Model(cursor) {
     }
     
     function change_to_draw_mode(create_new_diagram_object) {
+        /** In any function that changes the mode of the "model", events are
+         *  assigned to the cursor object, which is an abstraction of the users
+         *  peripherals, be it mouse and keyboard or the dial.
+         */
         cursor.set_just_clicked_event(function() {
             // do not create a primitive if the menu captures the cursor's 
             // input
@@ -154,10 +158,19 @@ function Model(cursor) {
         });
     }
     
+    /***************************************************************************
+     *  Add Bar Menu Events; each entry contains code that will run when the
+     *  user presses the cursor inside that entry
+     **************************************************************************/
+    
     m_bar_menu.push_entry("Edit", function(entry) {
         m_diagram_objects.forEach(function(object) { 
             object.enable_editing();
         });
+        
+        /** This is called by the menu whenever the user leaves the current 
+         *  mode.
+         */
         entry.on_mode_exit = function () {
             m_diagram_objects.forEach(function(object) { 
                 object.disable_editing();
@@ -206,9 +219,12 @@ function Model(cursor) {
     
     var finish_grouping = function() {
         if (m_candidate_group === undefined) return;
-        
+        if (m_candidate_group.length === 0) {
+            m_candidate_group = undefined;
+            return;
+        }
         // candidate groups with one member -> is already a 'group'
-        if (m_candidate_group.length === 1) {
+        else if (m_candidate_group.length === 1) {
             m_diagram_objects.push(m_candidate_group[0]);
             m_candidate_group = undefined;
             return;
@@ -224,13 +240,24 @@ function Model(cursor) {
     
     var m_candidate_group = undefined;
     var m_groups = [];
+    var k = { GROUP_DONE_TEXT : "Group Done" };
+    Object.freeze(k);
     m_bar_menu.push_entry("Group", function(entry) {
         var cursor = m_cursor_ref;
         m_candidate_group = [];
         cursor.reset_events();
 
-        entry.on_mode_exit = function () {
+        entry.on_mode_exit = function (entry) {
             console.log('Left grouping mode.');
+            
+            if (entry.text === k.GROUP_DONE_TEXT) {
+                finish_grouping();
+                return;
+            }
+            
+            if (m_candidate_group === undefined)
+                return;
+            
             m_candidate_group.forEach(function(object) {
                 m_diagram_objects.push(object);
             });
@@ -239,6 +266,7 @@ function Model(cursor) {
             });
             m_candidate_group = undefined;
         }
+        
         cursor.set_just_released_event(function() {
             if (m_bar_menu.check_click(cursor.location()))
                 return;
@@ -258,10 +286,8 @@ function Model(cursor) {
         });
     });
     
-    m_bar_menu.push_entry("Group Done", function() {
+    m_bar_menu.push_entry(k.GROUP_DONE_TEXT, function() {
         var cursor = m_cursor_ref;
-        
-        finish_grouping();
         
         cursor.reset_events();
         cursor.set_just_released_event(function() {
