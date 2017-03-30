@@ -302,7 +302,6 @@ function Model(cursor) {
     });
 
     m_bar_menu.push_entry("Save", function(){
-        var id = 'main-canvas';
         var currentdate = new Date(); 
         var datetime = currentdate.getDate() + "-"
                 + (currentdate.getMonth()+1)  + "-" 
@@ -311,18 +310,35 @@ function Model(cursor) {
                 + currentdate.getMinutes() + "-" 
                 + currentdate.getSeconds();
         var fileName = 'canvas_' + datetime.toString();
-
-        var canvasElement = document.getElementById(id);
-
+        var canvasElement = document.getElementById('main-canvas');
+        var window_width = canvasElement.width;
+        var window_height = canvasElement.height;
+        var tempCanvas = document.createElement("canvas"),
+        tCtx = tempCanvas.getContext("2d");
+       
+        tCtx.canvas.width = window_width;
+        tCtx.canvas.height = window_height - window_height/7;
+        var x_start = 0;
+        var y_start_org = window_height/7;
+        var y_start_copy = 0;
+        var width = window_width ;
+        var height = window_height - window_height/7;
+      
+        tCtx.drawImage(canvasElement, 
+            x_start, 
+            y_start_org, 
+            width,  
+            height, 
+            x_start, 
+            y_start_copy, 
+            width, 
+            height);
         var MIME_TYPE = "image/png";
-
-        var imgURL = canvasElement.toDataURL(MIME_TYPE);
-
+        var imgURL = tempCanvas.toDataURL(MIME_TYPE);
         var dlLink = document.createElement('a');
         dlLink.download = fileName;
         dlLink.href = imgURL;
         dlLink.dataset.downloadurl = [MIME_TYPE, dlLink.download, dlLink.href].join(':');
-
         document.body.appendChild(dlLink);
         dlLink.click();
         document.body.removeChild(dlLink);
