@@ -8,21 +8,21 @@ function RectangularControlPoints(top_left, bottom_right) {
     var k = Object.freeze({ 
         TOP_LEFT : 0, TOP_RIGHT : 1, BOTTOM_RIGHT : 2, BOTTOM_LEFT : 3 
     });
-    var m_bounds_points = [undefined, undefined, undefined, undefined];
-    (function(){
+    var m_bounds_points = [undefined, undefined, undefined, undefined];    
+    var m_move_point = undefined;
+    
+    var m_on_scale = function (_) {};
+    var m_on_move  = function (_) {};
+    var m_is_being_dragged = false;
+    var self = this;
+    
+    (function() {
         var pts = m_bounds_points;
         pts[k.TOP_LEFT    ] = top_left; 
         pts[k.TOP_RIGHT   ] = { x: bottom_right.x, y: top_left.y };
         pts[k.BOTTOM_RIGHT] = bottom_right;
         pts[k.BOTTOM_LEFT ] = { x: top_left.x, y: bottom_right.y };
     })();
-    
-    var m_move_point = undefined;
-                       
-    var m_on_scale = function (_) {};
-    var m_on_move  = function (_) {};
-    var m_is_being_dragged = false;
-    var self = this;
     
     function point_size() { return 10.0; }
     
@@ -89,6 +89,7 @@ function RectangularControlPoints(top_left, bottom_right) {
             m_bounds_points[index].x -= displacement.x;
             m_bounds_points[index].y -= displacement.y;
         });
+        m_on_move(displacement);
     }
     
     this.handle_cursor_click = function(cursor_obj) {
@@ -117,7 +118,7 @@ function RectangularControlPoints(top_left, bottom_right) {
     }
     this.handle_cursor_move = function(_) {};
     
-    this.bounds = function () {
+    this.bounds = function() {
         // I wonder if I can just use the constructor arguments
         // (well no garuantee that it's not undef'd)
         var bottom_right_ = m_bounds_points[k.BOTTOM_RIGHT];

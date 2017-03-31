@@ -330,4 +330,11 @@ function Polygon() {
         m_control_points = [];
     }
     this.explode = function() { return this; }
+    this.expose = function(func) { 
+        var gv = func({ type : "Polygon", points : deepcopy(m_points) });
+        m_points = gv.points;
+        if (m_control_points === undefined) return;
+        this.disable_editing();
+        this.enable_editing();
+    }
 } // end of Polygon

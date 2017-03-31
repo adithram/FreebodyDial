@@ -64,25 +64,64 @@ function Group(sub_items) {
         if (!m_is_editing) return;
         m_control_points.handle_cursor_click(cursor_obj);
     }
+    
     this.handle_cursor_move  = function(cursor_obj) {
         if (!m_is_editing) return;
         m_control_points.handle_cursor_move(cursor_obj);
     }
+    
     this.enable_editing = function() {
         this.highlight();
         m_is_editing = true;
         m_control_points.set_scale_event(function(scale_vector) {
-            // need to know how to scale everything in m_sub_items
+            // Scaling is easy, but there needs to be an anchor point
         });
         m_control_points.set_move_event(function(displacement) {
             // need to know how to move everything in m_sub_items
+            var move_points = function(points) {
+                if (points === undefined) return undefined;
+                points.forEach(function(_, index) {
+                    points[index].x -= displacement.x;
+                    points[index].y -= displacement.y;
+                });
+                return points;
+            };
+            var move_items = function(items) {
+                if (items === undefined) return undefined;
+                items.forEach(function(_, index) {
+                    if (items[index].points !== undefined) {
+                        items[index].points = move_points(items[index].points);
+                    }
+                    if (items[index].items !== undefined) {
+                        items[index].items = move_items(items[index].items);
+                    }
+                });
+                return items;
+            };
+            m_sub_items.forEach(function(item) {
+                item.expose(function(data) {
+                    data.points = move_points(data.points);
+                    data.items = move_items(data.items);
+                    return data;
+                });
+                
+            });
         });
     }
+    
     this.disable_editing = function () {
         this.unhighlight();
-        
-        m_control_points.set_scale_event(function(_) {});
-        m_control_points.set_move_event(function(_) {});
+        m_is_editing = false;
     }
+    
     this.finished_creating = function() { return true; }
+    
+    this.expose = function(func) {
+        var gv = { type : "Group", items : [] };
+        m_sub_items.forEach(function(item) {
+            item.expose(function(as_data) {
+                gv.items.push(as_data);
+            });
+        });
+    }
 }

@@ -12,10 +12,12 @@
             "point_within", "bounds",
             "explode", 
             "draw", 
-            // events
+            // events -> for editing
             "handle_cursor_move", "handle_cursor_click",
             // edit mode specific
-            "enable_editing", "disable_editing"];
+            "enable_editing", "disable_editing",
+            // momento save/restore
+            "expose"];
         var rv = "";
         required_functions.forEach(function(str) {
             if (obj[str] === undefined) {
@@ -28,7 +30,7 @@
     function get_object_name(obj) {
         return (/^function(.{1,})\(/).exec(obj.constructor.toString())[1];
     }
-    [new Line(), new Group([]), new Polygon, new Ellipse].forEach(function(obj) {
+    [new Line(), new Group([]), new Polygon(), new Ellipse()].forEach(function(obj) {
         var gv = find_missing_function(obj);
         if (gv !== "") {
             throw get_object_name(obj) + " does not have a required " + 

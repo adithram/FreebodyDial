@@ -332,4 +332,17 @@ function Line() {
                  width : Math.abs(m_point_a.x - m_point_b.x),
                  height: Math.abs(m_point_a.y - m_point_b.y) };
     }
+    
+    /** Exposes the line's internals as a Momento.
+     *  @param func {function} a function which excepts
+     */
+    this.expose = function(func) {
+        var gv = func({ type: "Line", points: [m_point_a, m_point_b] });
+        if (gv !== undefined) {
+            m_point_a = gv.points[0];
+            m_point_b = gv.points[1];
+            if (m_control_points !== undefined)
+                m_control_points.set_points(gv.a, gv.b);
+        }
+    }
 } // end of Line

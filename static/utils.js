@@ -96,7 +96,13 @@ var g_this = this;
 
 function zero_vect() { return { x: 0, y: 0 }; }
 
-function deepcopy(obj) { return $.extend(true, {}, obj); }
+function deepcopy(obj) { 
+    if ($.isArray(obj)) {
+        return $.extend(true, [], obj);
+    } else {
+        return $.extend(true, {}, obj);
+    }
+}
 
 function draw_bounds_as_black_outlined_box(context, cp_bounds, fill_color) {
     context.beginPath();
