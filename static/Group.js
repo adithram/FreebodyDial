@@ -6,6 +6,7 @@ function Group(sub_items) {
     var m_top_left       = undefined;
     var m_bottom_right   = undefined;
     var m_control_points = undefined;
+    var m_is_editing     = false;
     
     var for_init_compute_bounds_around_array = function(items) {
         var top_left_most     = { x:  Infinity, y:  Infinity };
@@ -59,13 +60,29 @@ function Group(sub_items) {
                  height: m_bottom_right.y - m_top_left.y };
     }
     
-    this.handle_cursor_click = function(cursor_obj) {}
-    this.handle_cursor_move  = function(cursor_obj) {}
+    this.handle_cursor_click = function(cursor_obj) {
+        if (!m_is_editing) return;
+        m_control_points.handle_cursor_click(cursor_obj);
+    }
+    this.handle_cursor_move  = function(cursor_obj) {
+        if (!m_is_editing) return;
+        m_control_points.handle_cursor_move(cursor_obj);
+    }
     this.enable_editing = function() {
         this.highlight();
+        m_is_editing = true;
+        m_control_points.set_scale_event(function(scale_vector) {
+            // need to know how to scale everything in m_sub_items
+        });
+        m_control_points.set_move_event(function(displacement) {
+            // need to know how to move everything in m_sub_items
+        });
     }
     this.disable_editing = function () {
         this.unhighlight();
+        
+        m_control_points.set_scale_event(function(_) {});
+        m_control_points.set_move_event(function(_) {});
     }
     this.finished_creating = function() { return true; }
 }
