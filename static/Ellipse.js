@@ -31,6 +31,7 @@ function Ellipse() {
     var m_finished_creating = false;
     var self = this;
     
+    // Default values. 
     this.set_location = function(x_, y_) { m_location = { x: x_, y: y_ }; }
     this.set_radii = function(x_, y_) { m_radii = { x: x_, y: y_ }; }
     this.finished_creating = function() { return m_finished_creating; }
