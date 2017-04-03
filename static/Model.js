@@ -1,3 +1,24 @@
+/*******************************************************************************
+ * 
+ *  Copyright 2017
+ *  Authors: Andrew Janke, Dennis Chang, Lious Boehm, Adithya Ramanathan
+ *  Released under the GPLv3 
+ * 
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ ******************************************************************************/
+
 "use strict";
 
 (function(){
@@ -12,10 +33,12 @@
             "point_within", "bounds",
             "explode", 
             "draw", 
-            // events
+            // events -> for editing
             "handle_cursor_move", "handle_cursor_click",
             // edit mode specific
-            "enable_editing", "disable_editing"];
+            "enable_editing", "disable_editing",
+            // momento save/restore
+            "expose"];
         var rv = "";
         required_functions.forEach(function(str) {
             if (obj[str] === undefined) {
@@ -28,7 +51,7 @@
     function get_object_name(obj) {
         return (/^function(.{1,})\(/).exec(obj.constructor.toString())[1];
     }
-    [new Line(), new Group([]), new Polygon, new Ellipse].forEach(function(obj) {
+    [new Line(), new Group([]), new Polygon(), new Ellipse()].forEach(function(obj) {
         var gv = find_missing_function(obj);
         if (gv !== "") {
             throw get_object_name(obj) + " does not have a required " + 
@@ -123,8 +146,14 @@ function Model(cursor) {
             if (m_bar_menu.check_click(cursor.location()))
                 return;
             if (m_diagram_objects.length > 0) {
-                if (!array_last(m_diagram_objects).finished_creating())
-                    return;
+                // detect if the object has finished its creation
+                // do not assume "it will tell us", but if it doesn't we will
+                // assume it has finished
+                var last_obj = array_last(m_diagram_objects);
+                if (last_obj.finished_creating !== undefined) {
+                    if (!last_obj.finished_creating())
+                        return;
+                }
             }
             // we can now trade this for any primitive
             // Say an ellipse or polygon or Text
