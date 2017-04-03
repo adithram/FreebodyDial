@@ -1,3 +1,24 @@
+/*******************************************************************************
+ * 
+ *  Copyright 2017
+ *  Authors: Andrew Janke, Dennis Chang, Lious Boehm, Adithya Ramanathan
+ *  Released under the GPLv3 
+ * 
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ ******************************************************************************/
+
 "use strict";
 
 var LineConstants = {
@@ -257,7 +278,7 @@ function Line() {
         return (dist <= distance_limit);
     }
 
-    this.finished_creating = function() { return true; }
+    //this.finished_creating = function() { return true; }
 
     /** While the Line is being pulled (as part of its creation) or edited;
      *  snap_to_guideline will add a snapping effect allowing for more 
@@ -338,11 +359,11 @@ function Line() {
      */
     this.expose = function(func) {
         var gv = func({ type: "Line", points: [m_point_a, m_point_b] });
-        if (gv !== undefined) {
-            m_point_a = gv.points[0];
-            m_point_b = gv.points[1];
-            if (m_control_points !== undefined)
-                m_control_points.set_points(gv.a, gv.b);
-        }
+        if (gv === undefined) return;
+        
+        m_point_a = gv.points[0];
+        m_point_b = gv.points[1];
+        if (m_control_points !== undefined)
+            m_control_points.set_points(gv.a, gv.b);
     }
 } // end of Line
