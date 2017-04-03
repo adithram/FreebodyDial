@@ -201,6 +201,13 @@ function Model(cursor) {
      *  user presses the cursor inside that entry
      **************************************************************************/
     
+    // // Bar menu event for Instructions
+    m_bar_menu.push_entry("How to...", function(entry) {
+        //Instructions on what the user should do.
+    });
+
+
+
     // Bar menu event for Edit. 
     m_bar_menu.push_entry("Edit", function(entry) {
         // Enable editing for each object on the canvas. 
