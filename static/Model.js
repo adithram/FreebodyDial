@@ -21,6 +21,7 @@
 
 "use strict";
 
+// Less behavioral and more assertation. 
 (function(){
     // "concept checking"
     // must meet a "common interface"
@@ -91,17 +92,20 @@ function Model(cursor) {
     // weak references are not possible in JavaScript
     // I maybe stuck with type switching... (ew)
     // (perhaps in a new standard)
+    // Diagram objects themselves are the various drawn items on the canvas. 
     var m_diagram_objects = [];
     var m_last_undone_object = undefined;
     
     // :WARNING: I AM going to change how this works!
     var m_guidelines = [{ x: 1, y: 0 }, { x: 0, y: 1 }, Vector.norm({ x: 3, y: 1 }) ];
     
+    // Creates the bar menu. 
     var m_bar_menu = new BarMenu();
     
     var m_cursor_box = undefined;
     var self = this; // some closures can't get to 'this', self is a fix for 'this'
-        
+    
+    // Perform action on each line based on user button/navbar selection. 
     function for_each_line_in(array, func) {
         array.forEach(function(item) {
             if (item instanceof Line)
@@ -109,6 +113,7 @@ function Model(cursor) {
         });
     }
     
+    // Ensure that the array does not contain any undefined values - this should not occur in theory. 
     function assert_no_empties(array) {
         array.forEach(function(item) {
             if (item === undefined)
@@ -116,8 +121,10 @@ function Model(cursor) {
         });
     }
     
+    // Default cursor box size. Seen when editing. 
     function cursor_box_size() { return { x: 10, y: 10 }; }
     
+    // snapping function - so that Brad does not have to deal with "squiggly" lines
     function snap_last_object_to_guidelines() {
         if (m_diagram_objects.length === 0) return;
         m_guidelines.forEach(function(guideline) {
@@ -128,6 +135,7 @@ function Model(cursor) {
         });
     }
     
+    // Declare a minimum size requirement so that certain accidental creations aren't saved or used.
     function delete_objects_too_small() {
         m_diagram_objects = array_trim(m_diagram_objects, function(object) {
             var bounds = object.bounds();
@@ -135,6 +143,7 @@ function Model(cursor) {
         });
     }
     
+    //Changes to draw mode. Draw mode currently indicates a line. Due for renaming.
     function change_to_draw_mode(create_new_diagram_object) {
         /** In any function that changes the mode of the "model", events are
          *  assigned to the cursor object, which is an abstraction of the users
