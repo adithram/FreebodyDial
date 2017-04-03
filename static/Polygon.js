@@ -210,12 +210,15 @@ function Polygon() {
         context.stroke();
     }
     
+    // The polygon is closed by returning to the first point.
+    // This function is used to understand whether the polygon is considered finished.
     var within_first_point = function(cursor_loc) {
         if (m_points.length === 0) return false;
         return Math.abs(m_points[0].x - cursor_loc.x) < 10.0 &&
                Math.abs(m_points[0].y - cursor_loc.y) < 10.0;
     }
     
+    // Updates the bounds
     var update_bounds = function() {
         if (m_points.length === 0)
             return { x: 0, y: 0, width: 0, height: 0 };
@@ -234,6 +237,9 @@ function Polygon() {
      *             Functions used while creating the Polygon
      **************************************************************************/
     
+    // Handles the cursor click which indicates the intialization of 
+    // polygon drawing, the addition of a new corner, or the closing
+    // of the polygon
     var handle_cursor_click_creation = function(cursor_obj) {
         if (m_points.length === 0 && cursor_obj.is_pressed()) {
             m_points.push(cursor_obj.location());
@@ -253,12 +259,15 @@ function Polygon() {
         }
     }
     
+    // Handles cursor movement which indicates the various other points
     var handle_cursor_move_creation = function(cursor_obj) {
         if (m_points.length > 0) {
             m_candidate_point = cursor_obj.location();
         }
     }
     
+    // Function such that as new corner points are added, and as the cursor
+    // is moved, the object is drawed. 
     var draw_while_creating = function(context) {
         // initial draw function while the polygon object is being created
         var save_restore = function(context, func) {
@@ -266,6 +275,7 @@ function Polygon() {
             func();
             context.restore();
         };
+        // The polygon is a bunch of lines connected through a point
         for (var i = 0; i !== m_points.length - 1; ++i)
             draw_line_from_index(context, i);
         if (m_points.length !== 0 && m_candidate_point !== undefined) {
@@ -280,6 +290,7 @@ function Polygon() {
                 context.arc(pt.x - radius, pt.y - radius, radius, 0, 2*Math.PI, false);
                 
                 // apply styling
+                // Indicator for point to return to
                 context.font = '12pt Verdana';
                 context.fillText("Click here to finish drawing.", pt.x, pt.y);
                 context.lineWidth = 3;
@@ -311,6 +322,7 @@ function Polygon() {
      *             Functions used while editing the Polygon
      **************************************************************************/
     
+    // Cursor click in edit mode. Indicates which control point was selected. 
     var handle_cursor_click_editing = function(cursor_obj) {
         m_control_points.forEach(function(control_point) {
             control_point.handle_cursor_click(cursor_obj);
@@ -319,6 +331,8 @@ function Polygon() {
         array_last(m_control_points).set_location(m_points);
     };
     
+    // Cursor movement after a control point has been selected.
+    // Handles movement, reshaping, or resizing 
     var handle_cursor_move_editing = function(cursor_obj) {
         m_control_points.forEach(function(control_point, index) {
             var was_dragged = control_point.is_being_dragged();
@@ -331,6 +345,7 @@ function Polygon() {
         });
     }
     
+    // Allows for line visiibility while editing. 
     var draw_while_editing_or_viewing = function(context) {
         for (var i = 0; i !== m_points.length; ++i)
             draw_line_from_index(context, i);
@@ -350,6 +365,7 @@ function Polygon() {
     this.finished_creating = function() { 
         return self.draw === draw_while_editing_or_viewing; 
     }
+    // Function that indicates a change to edit mode.
     this.enable_editing = function() {
         self.highlight();
         m_control_points.push(new PolygonTranslationControlPoint());
@@ -357,6 +373,7 @@ function Polygon() {
         self.handle_cursor_click = handle_cursor_click_editing;
         self.handle_cursor_move = handle_cursor_move_editing;
     }
+    // Function that indicates a change away from edit mode to any other mode. 
     this.disable_editing = function() {
         m_control_points = [];
         self.handle_cursor_move = self.handle_cursor_click = function(_){};
@@ -376,6 +393,9 @@ function Polygon() {
         m_control_points = [];
     }
     this.explode = function() { return this; }
+    // Handles encoding. 
+    // Currently used for grouping. 
+    // Will be used for loading and exporting diagrams as well. 
     this.expose = function(func) { 
         var gv = func({ type : "Polygon", points : deepcopy(m_points) });
         if (gv === undefined) return;
