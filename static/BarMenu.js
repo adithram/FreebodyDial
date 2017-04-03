@@ -29,22 +29,29 @@
 function BarMenu() {
     assert_new.check(this);
     
+    // Contains the various menu options
     var m_entries = [];
+    // Used to see whether change in click as occured
     var m_previous_press = undefined;
     // will have to be constant relative to the diagram
     var m_location = zero_vect();
     var m_size     = zero_vect();
     var self = this;
     
+    // Function that handles clicks within the menu bar
     var handle_click_inside = function(entry) {
+        // Asserts that the current click is different than the previous click. 
+        // A change has occured
         if (m_previous_press !== entry) {
             if (m_previous_press !== undefined)
                 m_previous_press.on_mode_exit(entry, m_previous_press);
             entry.callback(entry);
         }
+        // Reset the previous press
         m_previous_press = entry;
     }
     
+    // Function used to add operations to menu bar with respective functionality.
     this.push_entry = function(text_, callback_) {
         m_entries.push({ text: text_, callback: callback_,
                          on_mode_exit: function(_){} });
@@ -59,6 +66,7 @@ function BarMenu() {
         m_previous_press = array_last(m_entries);
     }
     
+    // Function that checks the cursor position within the menu bar for a single entry
     this.check_click = function(cursor) {
         if (m_entries.length === 0) return false;
         if (m_entries[0].bounds === undefined) return false;
@@ -76,21 +84,24 @@ function BarMenu() {
     // I wish I could do this with regular HTML elements, it would be soooo
     // much easier and allow fancier graphics
     // this function DOES modify the state of the object
+    // Physically creates the menu bar
     this.draw = function(context) {
 
-        // n objects n.-
 
         var draw_position = deepcopy(m_location);
-        // javascript function to find width of the page / 7
+        // Find window width and height - used for dynamic resizing
         var window_width = $(window).width();
         var window_height = $(window).height();
         
         m_size = zero_vect();
+        // Modify the font size based on window size - used for dynamic resizing
         context.font = (window_height / 22)+"px Arial";
         context.lineWidth = 1;
         context.strokeStyle = 'black';
         
+        // Iterate through each entry or menu option
         m_entries.forEach(function(entry) { 
+            //Declare static size for each entry. Size changes depending on window size. 
             var entry_size = { x: window_width / m_entries.length,
                                y: parseInt(context.font) + window_height / 12 };
             // update entry bounds
@@ -111,14 +122,18 @@ function BarMenu() {
             // entry text
             context.fillStyle = 'black';
             
+            // Variables containing witdth of text, width of box, and the position of the beginning of the text
+            // Position indicates a centered position
             var text_width = context.measureText(entry.text).width;
             var box_width = window_width / m_entries.length;
             var position =  (box_width - text_width) / 2;
             
+            // Fill box with text at the right position
             context.fillText(entry.text, 
                              draw_position.x + position, 
-                             draw_position.y + entry_size.y / 2)
-            
+                             draw_position.y + entry_size.y 
+
+            // Move to handle the next entry
             m_size.x += entry_size.x;
             draw_position.x += entry_size.x;
         });
