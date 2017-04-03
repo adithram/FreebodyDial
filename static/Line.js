@@ -383,6 +383,10 @@ function Line() {
     /** Exposes the line's internals as a Momento.
      *  @param func {function} a function which excepts
      */
+
+     // Handles encoding. 
+    // Currently used for grouping. 
+    // Will be used for loading and exporting diagrams as well.
     this.expose = function(func) {
         var gv = func({ type: "Line", points: [m_point_a, m_point_b] });
         if (gv === undefined) return;

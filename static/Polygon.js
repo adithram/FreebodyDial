@@ -48,17 +48,22 @@ function PolygonEndControlPoint(point_ref) {
 }
 */
 
+// Function handles the translation of the polygon. Considered "dragging"
 function Draggable() {
     assert_new.check(this);
     
+    // Default value is fase
     var m_is_being_dragged = false;
     
+    //Check that cursor is in a position indicating the users intent to translate
     var within_point = function(parent_point, cursor_point) {
         return Vector.mag(Vector.sub(parent_point, cursor_point)) < 10.0;
     }
     
+    // Update value depending on user behvaior
     this.is_being_dragged = function() { return m_is_being_dragged; }
     
+    // Handles the click atthe correct position and updates status accordingly. 
     this.handle_draggable_cursor_click = function(cursor_obj, this_location) {
         if (within_point(this_location, cursor_obj.location()) 
             && cursor_obj.is_pressed()) 
@@ -70,6 +75,8 @@ function Draggable() {
     }
 }
 
+// Control points for the Polygon. Similar to the line control points. 
+// Specifically used for translation.
 function PolygonTranslationControlPoint() {
     assert_new.check(this);
     Draggable.call(this);
@@ -91,10 +98,13 @@ function PolygonTranslationControlPoint() {
         m_old_location = m_location = v;
     }
     
+    // Translates basic cursor click to a cursor click as it relates to dragging 
     this.handle_cursor_click = function(cursor_obj) {
         self.handle_draggable_cursor_click(cursor_obj, m_location);
     }
     
+    // Handles cursor movement in the scheme of editing. 
+    // Curosr movement relates to dragging NOT resizing or reshaping. 
     this.handle_cursor_move = function(cursor_obj, polygon_points) {
         if (!self.is_being_dragged()) return;
         if (m_old_location === undefined)
@@ -107,6 +117,7 @@ function PolygonTranslationControlPoint() {
         });
     }
     
+    // Draw middle control point. Point is blue. 
     this.draw = function(context) {
         draw_bounds_as_black_outlined_box
             (context, Vector.bounds_around(m_location, { x: 10, y : 10 }), 'blue');
@@ -116,6 +127,7 @@ function PolygonTranslationControlPoint() {
 PolygonTranslationControlPoint.prototype = Object.create(Draggable.prototype);
 PolygonTranslationControlPoint.prototype.constructor = PolygonTranslationControlPoint;
 
+//Polygon control points specifically used for resizing or reshaping. 
 function PolygonEndControlPoint() {
     assert_new.check(this);
     Draggable.call(this);
@@ -127,10 +139,13 @@ function PolygonEndControlPoint() {
     var m_parent_index = undefined;
     var self = this;
     
+    // Handles cursor click which indicates the users intent ot resize or reshape
     self.handle_cursor_click = function(cursor_obj) {
         self.handle_draggable_cursor_click(cursor_obj, m_parent_point);
     }
     
+    // Handles the cursor movement once a click has occured 
+    // Handles the actual resizing or reshaping
     self.handle_cursor_move = function(cursor_obj, polygon_points) {
         if (self.is_being_dragged()) {
             m_parent_point = cursor_obj.location();
@@ -140,13 +155,16 @@ function PolygonEndControlPoint() {
         }
     }
     
+    // Update the parent point.
     self.set_parent_point = function(point, index) {
         m_parent_point = point;
         m_parent_index = index;
     }
     
+    // Understand location after changes have occured. 
     self.location = function() { return m_parent_point; }
     
+    // Draw end control points. Points are yellow. 
     self.draw = function(context) {
         if (m_parent_point === undefined) return;
         draw_bounds_as_black_outlined_box
@@ -165,18 +183,25 @@ PolygonEndControlPoint.prototype.constructor = PolygonEndControlPoint;
 // - central point for controlling translation
 function Polygon() {
     assert_new.check(this);
+    // Array for polygon points
     var m_points = [];
     var m_bounds = undefined;
     var m_candidate_point = undefined;
     
+    // Array for polygon control points
     var m_control_points = [];
     var self = this;
     
+    // Draw line from index:
+    // - Index is the starting point
+    // - Consider a polyfon as a structure made up of lines. 
+    // - Fisrt line is contructed with index and end position.
     var draw_line_from_index = function(context, index) {
         var next_index = (index + 1) % m_points.length;
         draw_line(context, m_points[index], m_points[next_index]);        
     }
     
+    // All other polygon lines are a function or a point_a and a point_b
     var draw_line = function(context, point_a, point_b) {
         context.beginPath();
         context.moveTo(point_a.x, point_a.y);
