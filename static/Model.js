@@ -204,6 +204,26 @@ function Model(cursor) {
     // // Bar menu event for Instructions
     m_bar_menu.push_entry("How to...", function(entry) {
         //Instructions on what the user should do.
+        var draw_instructions = "Instructions to Draw: \n1) Select the shape you want (line or polygon) from the menu.\n";
+        draw_instructions = draw_instructions +  "2) To draw a line, click and then drag the cursor until desired length is achieved.\n";
+        draw_instructions = draw_instructions + "3) To draw a polygon, click and drag line. When new corner desired click again. Return to start point to close.\n";
+
+        var edit_instructions = "\nInstructions to Edit:\n1) Select edit mode from the menu.\n";
+        edit_instructions = edit_instructions + "2) To resize, select a yellow corner control point and drag.\n";
+        edit_instructions = edit_instructions + "3) To translate, select the blue square and drag and click accordingly to desired location.\n";
+
+        var group_instructions = "\nInstructions to Group:\n1) Select group mode from the menu\n";
+        group_instructions = group_instructions + "2) Select the objects you desire to group with your cursor.\n";
+        group_instructions = group_instructions + "3) Select 'Group Done' when you are done selecting the desired objects\n";
+
+        var save_instructions = "\nInstruction to Save:\n1) Select save from the menu\n2) Select location and rename if desired in popup window\n";
+
+        var undo_instructions = "\nInstructions to Undo:\n1) Select edit from the menu to undo drawing the last object created\n"
+
+        var all_instructions = draw_instructions + edit_instructions + group_instructions + undo_instructions + save_instructions;
+
+        alert(all_instructions);
+
     });
 
 
