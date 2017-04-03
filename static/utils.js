@@ -1,6 +1,27 @@
+/*******************************************************************************
+ * 
+ *  Copyright 2017
+ *  Authors: Andrew Janke, Dennis Chang, Lious Boehm, Adithya Ramanathan
+ *  Released under the GPLv3 
+ * 
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ ******************************************************************************/
+
 "use strict";
 
-// on reflection: I perhaps should've used a geometry library as opposed to 
+// on reflection: We perhaps should've used a geometry library as opposed to 
 //                reinventing the wheel, and wasting time
 //                DrawIO's API does what canvas does...
 
@@ -13,6 +34,8 @@ var assert_new = {
 };
 
 Object.freeze(assert_new);
+
+// Utility functions used for internal usage. 
 
 function assert_not_nan(f) { if (f != f) throw "Nan!"; }
 
@@ -57,6 +80,8 @@ function array_trim_first(arr, condition) {
 // var Vector = "victor"
 // Vector.in_bounds = ...
 // ...
+
+// Vectors used by lines and polygons. 
 var Vector = {
     mag : function(v) {
         return Math.sqrt(v.x*v.x + v.y*v.y);
@@ -94,10 +119,19 @@ Object.freeze(Vector);
 
 var g_this = this;
 
+// Default vector. <0,0>
 function zero_vect() { return { x: 0, y: 0 }; }
 
-function deepcopy(obj) { return $.extend(true, {}, obj); }
+//deepcopy function used by nav bar
+function deepcopy(obj) { 
+    if ($.isArray(obj)) {
+        return $.extend(true, [], obj);
+    } else {
+        return $.extend(true, {}, obj);
+    }
+}
 
+//Bounding function. 
 function draw_bounds_as_black_outlined_box(context, cp_bounds, fill_color) {
     context.beginPath();
     context.rect(cp_bounds.x, cp_bounds.y, cp_bounds.width, cp_bounds.height);

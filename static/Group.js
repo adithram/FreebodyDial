@@ -1,4 +1,26 @@
+/*******************************************************************************
+ * 
+ *  Copyright 2017
+ *  Authors: Andrew Janke, Dennis Chang, Lious Boehm, Adithya Ramanathan
+ *  Released under the GPLv3 
+ * 
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ ******************************************************************************/
+
 "use strict";
+
 function Group(sub_items) {
     assert_new.check(this);
     
@@ -6,8 +28,11 @@ function Group(sub_items) {
     var m_top_left       = undefined;
     var m_bottom_right   = undefined;
     var m_control_points = undefined;
+    var m_is_editing     = false;
     
-    var for_init_compute_bounds_around_array = function(items) {
+    var m_scale = { x: 1, y: 1 };
+    
+    (function(items) {
         var top_left_most     = { x:  Infinity, y:  Infinity };
         var bottom_right_most = { x: -Infinity, y: -Infinity };
         items.forEach(function(item) {
@@ -21,9 +46,54 @@ function Group(sub_items) {
         });
         m_top_left     = top_left_most;
         m_bottom_right = bottom_right_most;
-    }
-    for_init_compute_bounds_around_array(sub_items);
-    for_init_compute_bounds_around_array = undefined;
+    })(sub_items);
+    
+    /***************************************************************************
+     *                         Control point events
+     **************************************************************************/
+    
+    var on_move_control_points = function(displacement) {
+        // need to know how to move everything in m_sub_items
+        var move_points = function(points) {
+            if (points === undefined) return undefined;
+            points.forEach(function(_, index) {
+                points[index].x -= displacement.x;
+                points[index].y -= displacement.y;
+            });
+            return points;
+        };
+        var move_items = function(items) {
+            if (items === undefined) return undefined;
+            items.forEach(function(_, index) {
+                if (items[index].points !== undefined) {
+                    items[index].points = move_points(items[index].points);
+                }
+                if (items[index].items !== undefined) {
+                    items[index].items = move_items(items[index].items);
+                }
+            });
+            return items;
+        };
+        m_sub_items.forEach(function(item) {
+            item.expose(function(data) {
+                data.points = move_points(data.points);
+                data.items = move_items(data.items);
+                return data;
+            });
+            
+        });
+    };
+    
+    var on_scale_control_points = function(scale_factor) {
+        // Scaling is easy, but there needs to be an anchor point
+        // (we also must adjust...)
+        m_scale.x *= scale_factor.x;
+        m_scale.y *= scale_factor.y;
+    };
+    
+    /***************************************************************************
+     *                          Public interface
+     **************************************************************************/
     
     this.highlight = function() {
         m_control_points = 
@@ -43,14 +113,15 @@ function Group(sub_items) {
         return (dist <= distance_limit);
     }
     
-    this.explode = function() {
-        return m_sub_items;
-    }
+    this.explode = function() { return m_sub_items; }
     
     this.draw = function(context) { 
+        //context.save();
+        //context.scale(m_scale.x, m_scale.y);
         m_sub_items.forEach(function(item) { item.draw(context); });
+        //context.restore();
         if (m_control_points === undefined) return;
-        m_control_points.draw(context);
+            m_control_points.draw(context);
     }
     
     this.bounds = function() {
@@ -59,12 +130,42 @@ function Group(sub_items) {
                  height: m_bottom_right.y - m_top_left.y };
     }
     
-    this.handle_cursor_click = function(cursor_obj) {}
-    this.handle_cursor_move  = function(cursor_obj) {}
+    this.handle_cursor_click = function(cursor_obj) {
+        if (!m_is_editing) return;
+        m_control_points.handle_cursor_click(cursor_obj);
+    }
+    
+    this.handle_cursor_move  = function(cursor_obj) {
+        if (!m_is_editing) return;
+        m_control_points.handle_cursor_move(cursor_obj);
+    }
+    
     this.enable_editing = function() {
         this.highlight();
+        m_is_editing = true;
+        m_control_points.set_scale_event(on_scale_control_points);
+        m_control_points.set_move_event(on_move_control_points);
     }
+    
     this.disable_editing = function () {
         this.unhighlight();
+        m_is_editing = false;
+    }
+    
+    //this.finished_creating = function() { return true; }
+    
+    this.expose = function(func) {
+        var gv = { type : "Group", items : [] };
+        m_sub_items.forEach(function(item) {
+            item.expose(function(as_data) {
+                gv.items.push(as_data);
+            });
+        });
+        var gv_ = func(gv);
+        if (gv_ !== undefined)
+            gv = gv_;
+        m_sub_items.forEach(function(_, index) {
+            m_sub_items[index].expose(function(_) { return gv.items[index]; });
+        });
     }
 }

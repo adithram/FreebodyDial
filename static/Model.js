@@ -1,5 +1,27 @@
+/*******************************************************************************
+ * 
+ *  Copyright 2017
+ *  Authors: Andrew Janke, Dennis Chang, Lious Boehm, Adithya Ramanathan
+ *  Released under the GPLv3 
+ * 
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+ ******************************************************************************/
+
 "use strict";
 
+// Less behavioral and more assertation. 
 (function(){
     // "concept checking"
     // must meet a "common interface"
@@ -12,10 +34,12 @@
             "point_within", "bounds",
             "explode", 
             "draw", 
-            // events
+            // events -> for editing
             "handle_cursor_move", "handle_cursor_click",
             // edit mode specific
-            "enable_editing", "disable_editing"];
+            "enable_editing", "disable_editing",
+            // momento save/restore
+            "expose"];
         var rv = "";
         required_functions.forEach(function(str) {
             if (obj[str] === undefined) {
@@ -28,11 +52,7 @@
     function get_object_name(obj) {
         return (/^function(.{1,})\(/).exec(obj.constructor.toString())[1];
     }
-<<<<<<< HEAD
-    [new Line(), new Group([])].forEach(function(obj) {
-=======
-    [new Line(), new Group([]), new Polygon, new Ellipse].forEach(function(obj) {
->>>>>>> b04bf6a25afa53726401442ebd3a5dd138694b51
+    [new Line(), new Group([]), new Polygon(), new Ellipse()].forEach(function(obj) {
         var gv = find_missing_function(obj);
         if (gv !== "") {
             throw get_object_name(obj) + " does not have a required " + 
@@ -40,110 +60,6 @@
         }
     });
 }());
-
-function Ellipse() {
-    assert_new.check(this);
-    var m_radii = zero_vect();
-    // location means origin
-    var m_location = zero_vect();
-    
-    var m_first_point = undefined;
-    var m_finished_creating = false;
-    var self = this;
-    this.set_location = function(x_, y_) { m_location = { x: x_, y: y_ }; }
-    this.set_radii = function(x_, y_) { m_radii = { x: x_, y: y_ }; }
-    this.finished_creating = function() { return m_finished_creating; }
-    this.highlight = function() {}
-    this.unhighlight = function() {}
-    this.enable_editing  = function() {}
-    this.disable_editing = function() {}
-        
-    this.point_within = undefined;
-    this.explode = function() { return this; } 
-    this.bounds = function() {
-        return { x : m_location.x - m_radii.x, 
-                 y : m_location.y - m_radii.y, 
-                 width : m_radii.x*2.0, 
-                 height: m_radii.y*2.0 }
-    }
-    
-    var creation_second_handle_cursor_click = function(cursor_obj) {
-        if (cursor_obj.is_pressed()) return; // release event only
-        // initial function
-        console.log('moving to final step...')
-        m_first_point = cursor_obj.location();
-        self.handle_cursor_move = function(cursor_obj) {
-            var cur_loc = cursor_obj.location();
-            // x1 = x0 + a * cos(t) -> (x1 - x0)/cos(t) = a 
-            // y1 = y0 + b * sin(t) -> (y1 - y0)/sin(t) = b
-            // x2 = x0 + a * cos(u)
-            // y2 = y0 + b * sin(u)
-            // x1 - x2 = a * cos(t) - a * cos(u)
-            // x1 - x2 = a * ( cos(t) - cos(u) )
-            // y1 - y2 = b * ( sin(t) - sin(u) )
-            //var u = Vector.angle_between({ x: 1, y: 0 }, m_first_point);
-            //var t = Vector.angle_between({ x: 1, y: 0 }, cur_loc      );
-            var num = cur_loc.x**2*m_first_point.y**2 - cur_loc.y**2*m_first_point.x**2;
-            m_radii.x = Math.sqrt(Math.abs(num / (cur_loc.x**2 - m_first_point.x**2)));
-            m_radii.y = Math.sqrt(Math.abs(num / (cur_loc.y**2 - m_first_point.y**2)));
-            //m_radii.y = (cur_loc.x - m_first_point.x) / (Math.cos(t) - Math.cos(u));
-            //m_radii.x = (cur_loc.y - m_first_point.y) / (Math.sin(t) - Math.sin(u));
-            if (Math.random() > 0.95) {
-                //console.log("angle values fp: "+u+" cur_pos: "+t);
-                console.log("radii values : (x: "+m_radii.x+", y: "+m_radii.y+")");
-            }
-        }
-        self.handle_cursor_click = function(cursor_obj) {
-            if (!cursor_obj.is_pressed()) {
-                m_finished_creating = true;
-                self.handle_cursor_click = self.handle_cursor_move = function(_) {}
-            }
-        }
-    }
-    
-    this.handle_cursor_click = function(cursor_obj) {
-        if (cursor_obj.is_pressed()) {
-            m_location = cursor_obj.location();
-            console.log("ellipse location set");
-            return;
-        }
-        console.log("cursor move event function changed");
-        self.handle_cursor_move = function(cursor_obj) {
-            m_radii.x = m_radii.y = Vector.distance(cursor_obj.location(), m_location);
-        }
-        
-        self.handle_cursor_click = creation_second_handle_cursor_click;
-    }
-    
-    this.handle_cursor_move = function(_) {} 
-    
-    this.draw = function(context) {
-        // save state
-        context.save();
-
-        // scale context horizontally
-        context.translate(m_location.x, m_location.y);
-        context.scale    (m_radii.x   , m_radii.y   );
-        
-        // draw circle which will be stretched into an oval
-        context.beginPath();
-        context.arc(0, 0, 1, 0, 2*Math.PI, false);
-        
-        // restore to original state
-        context.restore();
-
-        // apply styling
-        context.fillStyle = 'black';
-        context.fill();
-        context.lineWidth = 3;
-        context.strokeStyle = 'black';
-        context.stroke();
-        if (m_first_point !== undefined) {
-            var fp_bounds = Vector.bounds_around(m_first_point, { x: 10, y: 10 });
-            draw_bounds_as_black_outlined_box(context, fp_bounds, 'black');
-        }
-    }
-}
 
 /** The 'M' in MVC; represents the program's state.
  *  
@@ -176,17 +92,20 @@ function Model(cursor) {
     // weak references are not possible in JavaScript
     // I maybe stuck with type switching... (ew)
     // (perhaps in a new standard)
+    // Diagram objects themselves are the various drawn items on the canvas. 
     var m_diagram_objects = [];
     var m_last_undone_object = undefined;
     
     // :WARNING: I AM going to change how this works!
     var m_guidelines = [{ x: 1, y: 0 }, { x: 0, y: 1 }, Vector.norm({ x: 3, y: 1 }) ];
     
+    // Creates the bar menu. 
     var m_bar_menu = new BarMenu();
     
     var m_cursor_box = undefined;
     var self = this; // some closures can't get to 'this', self is a fix for 'this'
-        
+    
+    // Perform action on each line based on user button/navbar selection. 
     function for_each_line_in(array, func) {
         array.forEach(function(item) {
             if (item instanceof Line)
@@ -194,15 +113,18 @@ function Model(cursor) {
         });
     }
     
+    // Ensure that the array does not contain any undefined values - this should not occur in theory. 
     function assert_no_empties(array) {
         array.forEach(function(item) {
             if (item === undefined)
-                throw "Array contains empties!";
+                throw "Array contains undefineds!";
         });
     }
     
+    // Default cursor box size. Seen when editing. 
     function cursor_box_size() { return { x: 10, y: 10 }; }
     
+    // snapping function - so that Brad does not have to deal with "squiggly" lines
     function snap_last_object_to_guidelines() {
         if (m_diagram_objects.length === 0) return;
         m_guidelines.forEach(function(guideline) {
@@ -213,6 +135,7 @@ function Model(cursor) {
         });
     }
     
+    // Declare a minimum size requirement so that certain accidental creations aren't saved or used.
     function delete_objects_too_small() {
         m_diagram_objects = array_trim(m_diagram_objects, function(object) {
             var bounds = object.bounds();
@@ -220,19 +143,30 @@ function Model(cursor) {
         });
     }
     
-    function change_to_draw_mode() {
+    //Changes to draw mode. Draw mode currently indicates a line. Due for renaming.
+    function change_to_draw_mode(create_new_diagram_object) {
+        /** In any function that changes the mode of the "model", events are
+         *  assigned to the cursor object, which is an abstraction of the users
+         *  peripherals, be it mouse and keyboard or the dial.
+         */
         cursor.set_just_clicked_event(function() {
             // do not create a primitive if the menu captures the cursor's 
             // input
             if (m_bar_menu.check_click(cursor.location()))
                 return;
             if (m_diagram_objects.length > 0) {
-                if (!array_last(m_diagram_objects).finished_creating())
-                    return;
+                // detect if the object has finished its creation
+                // do not assume "it will tell us", but if it doesn't we will
+                // assume it has finished
+                var last_obj = array_last(m_diagram_objects);
+                if (last_obj.finished_creating !== undefined) {
+                    if (!last_obj.finished_creating())
+                        return;
+                }
             }
             // we can now trade this for any primitive
             // Say an ellipse or polygon or Text
-            m_diagram_objects.push(new Polygon());
+            m_diagram_objects.push(create_new_diagram_object());
             array_last(m_diagram_objects).handle_cursor_click(cursor.as_read_only());
         });
         
@@ -262,10 +196,19 @@ function Model(cursor) {
         });
     }
     
+    /***************************************************************************
+     *  Add Bar Menu Events; each entry contains code that will run when the
+     *  user presses the cursor inside that entry
+     **************************************************************************/
+    
     m_bar_menu.push_entry("Edit", function(entry) {
         m_diagram_objects.forEach(function(object) { 
             object.enable_editing();
         });
+        
+        /** This is called by the menu whenever the user leaves the current 
+         *  mode.
+         */
         entry.on_mode_exit = function () {
             m_diagram_objects.forEach(function(object) { 
                 object.disable_editing();
@@ -304,26 +247,22 @@ function Model(cursor) {
     });
     
     m_bar_menu.push_entry("Draw", function() {
-<<<<<<< HEAD
-        m_diagram_objects.forEach(function(object) {
-            object.disable_editing();
-        });
-        change_to_draw_mode(m_cursor_ref);
-=======
         change_to_draw_mode(function() { return new Line() });
     });
     m_bar_menu.set_last_added_entry_as_default();
     
     m_bar_menu.push_entry("Polygon", function() {
         change_to_draw_mode(function() { return new Polygon() });
->>>>>>> b04bf6a25afa53726401442ebd3a5dd138694b51
     });
     
     var finish_grouping = function() {
         if (m_candidate_group === undefined) return;
-        
+        if (m_candidate_group.length === 0) {
+            m_candidate_group = undefined;
+            return;
+        }
         // candidate groups with one member -> is already a 'group'
-        if (m_candidate_group.length === 1) {
+        else if (m_candidate_group.length === 1) {
             m_diagram_objects.push(m_candidate_group[0]);
             m_candidate_group = undefined;
             return;
@@ -339,13 +278,24 @@ function Model(cursor) {
     
     var m_candidate_group = undefined;
     var m_groups = [];
+    var k = { GROUP_DONE_TEXT : "Group Done" };
+    Object.freeze(k);
     m_bar_menu.push_entry("Group", function(entry) {
         var cursor = m_cursor_ref;
         m_candidate_group = [];
         cursor.reset_events();
 
-        entry.on_mode_exit = function () {
+        entry.on_mode_exit = function (entry) {
             console.log('Left grouping mode.');
+            
+            if (entry.text === k.GROUP_DONE_TEXT) {
+                finish_grouping();
+                return;
+            }
+            
+            if (m_candidate_group === undefined)
+                return;
+            
             m_candidate_group.forEach(function(object) {
                 m_diagram_objects.push(object);
             });
@@ -354,6 +304,7 @@ function Model(cursor) {
             });
             m_candidate_group = undefined;
         }
+        
         cursor.set_just_released_event(function() {
             if (m_bar_menu.check_click(cursor.location()))
                 return;
@@ -373,21 +324,8 @@ function Model(cursor) {
         });
     });
     
-    m_bar_menu.push_entry("Group Done", function() {
+    m_bar_menu.push_entry(k.GROUP_DONE_TEXT, function() {
         var cursor = m_cursor_ref;
-        
-<<<<<<< HEAD
-        // ass convuluted...
-        if (m_candidate_group !== undefined) {
-            for_each(m_candidate_group, function(item) {
-                item.unhighlight();
-            });
-            m_diagram_objects.push(new Group(m_candidate_group));
-            m_candidate_group = undefined;
-        }
-=======
-        finish_grouping();
->>>>>>> b04bf6a25afa53726401442ebd3a5dd138694b51
         
         cursor.reset_events();
         cursor.set_just_released_event(function() {
@@ -400,7 +338,7 @@ function Model(cursor) {
                 if (!object.point_within(cursor.location(), 10)) return false;
                 var gv = object.explode();
                 if (Array.isArray(gv)) {
-                    for_each(gv, function(obj) {
+                    gv.forEach(function(obj) {
                         ungrouped_items.push(obj);
                     });
                 } else {
@@ -409,7 +347,7 @@ function Model(cursor) {
                 return true;
             });
             assert_no_empties(ungrouped_items);
-            for_each(ungrouped_items, function(items) {
+            ungrouped_items.forEach(function(items) {
                 m_diagram_objects.push(items);
             });
             assert_no_empties(m_diagram_objects);
@@ -436,20 +374,14 @@ function Model(cursor) {
                 + currentdate.getMinutes() + "-" 
                 + currentdate.getSeconds();
         var fileName = 'canvas_' + datetime.toString();
-
         var canvasElement = document.getElementById('main-canvas');
-
         var window_width = canvasElement.width;
         var window_height = canvasElement.height;
-
-
         var tempCanvas = document.createElement("canvas"),
         tCtx = tempCanvas.getContext("2d");
        
         tCtx.canvas.width = window_width;
         tCtx.canvas.height = window_height - window_height/7;
-
-
         var x_start = 0;
         var y_start_org = window_height/7;
         var y_start_copy = 0;
@@ -465,16 +397,12 @@ function Model(cursor) {
             y_start_copy, 
             width, 
             height);
-
         var MIME_TYPE = "image/png";
-
         var imgURL = tempCanvas.toDataURL(MIME_TYPE);
-
         var dlLink = document.createElement('a');
         dlLink.download = fileName;
         dlLink.href = imgURL;
         dlLink.dataset.downloadurl = [MIME_TYPE, dlLink.download, dlLink.href].join(':');
-
         document.body.appendChild(dlLink);
         dlLink.click();
         document.body.removeChild(dlLink);
@@ -486,11 +414,6 @@ function Model(cursor) {
         last_undone_line = new Line();
     });*/
     
-<<<<<<< HEAD
-    change_to_draw_mode();
-    
-=======
->>>>>>> b04bf6a25afa53726401442ebd3a5dd138694b51
     this.render_to = function(view) {
         // view is a draw context object
         view.fillStyle = "#000";
@@ -499,11 +422,7 @@ function Model(cursor) {
         }
         draw_each_of(m_diagram_objects);
         if (m_candidate_group !== undefined) {
-<<<<<<< HEAD
-            for_each(m_candidate_group, function(primitive) { primitive.draw(view); });
-=======
             draw_each_of(m_candidate_group);
->>>>>>> b04bf6a25afa53726401442ebd3a5dd138694b51
         }
         m_bar_menu.draw(view);
         if (m_cursor_box !== undefined) {
