@@ -54,6 +54,7 @@ function Group(sub_items) {
     
     var on_move_control_points = function(displacement) {
         // need to know how to move everything in m_sub_items
+        // can probably reuse for scaling also
         var move_points = function(points) {
             if (points === undefined) return undefined;
             points.forEach(function(_, index) {
@@ -89,6 +90,17 @@ function Group(sub_items) {
         // (we also must adjust...)
         m_scale.x *= scale_factor.x;
         m_scale.y *= scale_factor.y;
+        var handle_points = function(points) {
+            if (points === undefined) return;
+            
+        }
+        var handle_items = function(items) {
+            if (items === undefined) return;
+            
+        }
+        this.expose(function(obj) {
+            
+        });
     };
     
     /***************************************************************************

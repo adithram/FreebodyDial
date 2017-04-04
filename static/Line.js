@@ -143,6 +143,9 @@ function LineControlPoints(point_a, point_b) {
 
 /** A Line is a diagram primative.
  * 
+ *  Is this a "god" object?
+ *  Would it be better if it were a simple "struct" like object and...
+ * 
  *  The interface has creation/editing functions.
  *  Soon to be grouping functions, is there a way to prevent the interface
  *  from becoming too bloated?
@@ -323,7 +326,7 @@ function Line() {
         } else {
             if (m_control_points.is_editing_point_a()) {
                 m_point_a = { x: to_other_point.x + m_point_b.x,
-                              y: to_other_point.y + m_point_b.y };;
+                              y: to_other_point.y + m_point_b.y };
             } else if (m_control_points.is_editing_point_b()) {
                 m_point_b = comp_new_pt_b();
             } else {
