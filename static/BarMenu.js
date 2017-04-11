@@ -95,7 +95,7 @@ function BarMenu() {
         
         m_size = zero_vect();
         // Modify the font size based on window size - used for dynamic resizing
-        context.font = (window_height / 22)+"px Arial";
+        context.font = (window_height / 24)+"px Arial";
         context.lineWidth = 1;
         context.strokeStyle = 'black';
         
