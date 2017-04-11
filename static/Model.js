@@ -1,9 +1,9 @@
 /*******************************************************************************
- * 
+ *
  *  Copyright 2017
  *  Authors: Andrew Janke, Dennis Chang, Lious Boehm, Adithya Ramanathan
- *  Released under the GPLv3 
- * 
+ *  Released under the GPLv3
+ *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
@@ -16,7 +16,7 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  ******************************************************************************/
 
 "use strict";
@@ -29,11 +29,11 @@
     // primitives are handling their own events?!
     function find_missing_function(obj) {
         var required_functions = [
-            "highlight", "unhighlight", 
+            "highlight", "unhighlight",
             // geometry
             "point_within", "bounds",
-            "explode", 
-            "draw", 
+            "explode",
+            "draw",
             // events -> for editing
             "handle_cursor_move", "handle_cursor_click",
             // edit mode specific
@@ -55,18 +55,18 @@
     [new Line(), new Group([]), new Polygon(), new Ellipse()].forEach(function(obj) {
         var gv = find_missing_function(obj);
         if (gv !== "") {
-            throw get_object_name(obj) + " does not have a required " + 
+            throw get_object_name(obj) + " does not have a required " +
                   "function defined: \"" + gv + "\".";
         }
     });
 }());
 
 /** The 'M' in MVC; represents the program's state.
- *  
- *  Right now the program is comprised only of lines, a menu, and hopefully 
+ *
+ *  Right now the program is comprised only of lines, a menu, and hopefully
  *  soon groups.
- * 
- *  @note Implementing an undo feature maybe tricky, perhaps we could use 
+ *
+ *  @note Implementing an undo feature maybe tricky, perhaps we could use
  *        function closures to represent the inverse of user actions, and stack
  *        them onto an Array, and pop and execute as needed.
  */
@@ -81,8 +81,8 @@
 4) All lines in m_lines rendered
 
 In order to emulate the undo function...
-1) Decrease the list size by 1? 
-2) Re-render? 
+1) Decrease the list size by 1?
+2) Re-render?
 */
 function Model(cursor) {
     assert_new.check(this);
@@ -95,13 +95,13 @@ function Model(cursor) {
     // Diagram objects themselves are the various drawn items on the canvas. 
     var m_diagram_objects = [];
     var m_last_undone_object = undefined;
-    
+
     // :WARNING: I AM going to change how this works!
     var m_guidelines = [{ x: 1, y: 0 }, { x: 0, y: 1 }, Vector.norm({ x: 3, y: 1 }) ];
-    
+
     // Creates the bar menu. 
     var m_bar_menu = new BarMenu();
-    
+
     var m_cursor_box = undefined;
     var self = this; // some closures can't get to 'this', self is a fix for 'this'
     
@@ -142,8 +142,13 @@ function Model(cursor) {
             return (bounds.width < 10.0 && bounds.height < 10.0);
         });
     }
+
+    function handle_cursor_move_on_last_if_exists(cursor) {
+        if (m_diagram_objects.length !== 0)
+            array_last(m_diagram_objects).handle_cursor_move(cursor.as_read_only());
+    }
     
-    //Changes to draw mode.
+    // Changes to draw mode.
     function change_to_draw_mode(create_new_diagram_object) {
         /** In any function that changes the mode of the "model", events are
          *  assigned to the cursor object, which is an abstraction of the users
@@ -169,25 +174,27 @@ function Model(cursor) {
             m_diagram_objects.push(create_new_diagram_object());
             array_last(m_diagram_objects).handle_cursor_click(cursor.as_read_only());
         });
-        
+
         cursor.set_just_released_event(function() {
             //delete_objects_too_small();
             snap_last_object_to_guidelines();
+            handle_cursor_move_on_last_if_exists(cursor);
             if (m_diagram_objects.length !== 0)
                 array_last(m_diagram_objects).handle_cursor_click(cursor.as_read_only());
+            delete_objects_too_small();
         });
-        
+
         cursor.set_click_held_event(function() {
             // this is a continuous 'event'
-            // it is called on each time based update iff the cursor was 
+            // it is called on each time based update iff the cursor was
             // pressed on this and the previous frame
-            
+
             if (m_diagram_objects.length !== 0)
                 array_last(m_diagram_objects).handle_cursor_move(cursor.as_read_only());
-            
+
             snap_last_object_to_guidelines();
         });
-        
+
         cursor.set_location_change_event(function() {
             m_cursor_box = Vector.bounds_around(cursor.location(), cursor_box_size());
             if (m_diagram_objects.length !== 0)
@@ -195,7 +202,7 @@ function Model(cursor) {
             snap_last_object_to_guidelines();
         });
     }
-    
+
     /***************************************************************************
      *  Add Bar Menu Events; each entry contains code that will run when the
      *  user presses the cursor inside that entry
@@ -234,13 +241,13 @@ function Model(cursor) {
         m_diagram_objects.forEach(function(object) { 
             object.enable_editing();
         });
-        
-        /** This is called by the menu whenever the user leaves the current 
+
+        /** This is called by the menu whenever the user leaves the current
          *  mode.
          */
          // Disables editing - removes control points. 
         entry.on_mode_exit = function () {
-            m_diagram_objects.forEach(function(object) { 
+            m_diagram_objects.forEach(function(object) {
                 object.disable_editing();
             });
         };
@@ -260,24 +267,25 @@ function Model(cursor) {
             // so these are common to both draw and edit?
             snap_last_object_to_guidelines();
             delete_objects_too_small();
-            
+
             m_diagram_objects.forEach(function(object) {
                 object.handle_cursor_click(cursor.as_read_only());
             });
         });
-        
+
         cursor.set_click_held_event(function() {}); // necessary, useful?
         
         // Location of object has saed. 
         cursor.set_location_change_event(function() {
             m_cursor_box = Vector.bounds_around(cursor.location(), cursor_box_size());
-            
+
             m_diagram_objects.forEach(function(object) {
                 object.handle_cursor_move(cursor.as_read_only());
             });
             snap_last_object_to_guidelines();
         });
     });
+
     
     // Triggers a line drawing mode. 
     m_bar_menu.push_entry("Line", function() {
@@ -303,7 +311,7 @@ function Model(cursor) {
             m_candidate_group = undefined;
             return;
         }
-        
+
         // usual grouping behavior
         m_candidate_group.forEach(function(item) {
             item.unhighlight();
@@ -311,7 +319,7 @@ function Model(cursor) {
         m_diagram_objects.push(new Group(m_candidate_group));
         m_candidate_group = undefined;
     }
-    
+
     var m_candidate_group = undefined;
     var m_groups = [];
     var k = { GROUP_DONE_TEXT : "Group Done" };
@@ -325,16 +333,16 @@ function Model(cursor) {
 
         entry.on_mode_exit = function (entry) {
             console.log('Left grouping mode.');
-            
+
             if (entry.text === k.GROUP_DONE_TEXT) {
                 finish_grouping();
                 return;
             }
-            
+
             if (m_candidate_group === undefined)
                 return;
             
-            //Copies objects from diagram objects to candidate group
+            // Copies objects from diagram objects to candidate group
             m_candidate_group.forEach(function(object) {
                 m_diagram_objects.push(object);
             });
@@ -350,14 +358,14 @@ function Model(cursor) {
         cursor.set_just_released_event(function() {
             if (m_bar_menu.check_click(cursor.location()))
                 return;
-            
+
             var objs = m_diagram_objects;
             m_diagram_objects = array_trim_first(objs, function(object) {
                 if (!object.point_within(cursor.location(), 10)) return false;
-                
+
                 object.highlight();
                 m_candidate_group.push(object);
-                
+
                 return true;
             });
         });
@@ -369,12 +377,12 @@ function Model(cursor) {
     // Function that handles ending group mode. Groups the selected items. 
     m_bar_menu.push_entry(k.GROUP_DONE_TEXT, function() {
         var cursor = m_cursor_ref;
-        
+
         cursor.reset_events();
         cursor.set_just_released_event(function() {
             if (m_bar_menu.check_click(cursor.location()))
                 return;
-            
+
             var ungrouped_items = [];
             var objs = m_diagram_objects;
             m_diagram_objects = array_trim_first(objs, function(object) {
@@ -414,12 +422,12 @@ function Model(cursor) {
     m_bar_menu.push_entry("Save", function(){
         var currentdate = new Date(); 
 
-        //Deals with naming convention. 
+        // Deals with naming convention. 
         var datetime = currentdate.getDate() + "-"
-                + (currentdate.getMonth()+1)  + "-" 
-                + currentdate.getFullYear() + "-"  
-                + currentdate.getHours() + "-"  
-                + currentdate.getMinutes() + "-" 
+                + (currentdate.getMonth()+1)  + "-"
+                + currentdate.getFullYear() + "-"
+                + currentdate.getHours() + "-"
+                + currentdate.getMinutes() + "-"
                 + currentdate.getSeconds();
         var fileName = 'canvas_' + datetime.toString();
         var canvasElement = document.getElementById('main-canvas');
@@ -430,7 +438,7 @@ function Model(cursor) {
         // Create temporary canvas with elements but without menu bar. 
         var tempCanvas = document.createElement("canvas"),
         tCtx = tempCanvas.getContext("2d");
-       
+
         tCtx.canvas.width = window_width;
         tCtx.canvas.height = window_height - window_height/7;
         var x_start = 0;
@@ -515,7 +523,7 @@ m_bar_menu.push_entry("Print", function(){
         m_lines.push(last_undone_line);
         last_undone_line = new Line();
     });*/
-    
+
     this.render_to = function(view) {
         // view is a draw context object
         view.fillStyle = "#000";

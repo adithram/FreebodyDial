@@ -99,7 +99,8 @@ function RectangularControlPoints(top_left, bottom_right) {
             m_on_move(Vector.sub(old_bounds, new_bounds));
         }
         m_on_scale({ x: new_bounds.width  / old_bounds.width, 
-                     y: new_bounds.height / old_bounds.height });
+                     y: new_bounds.height / old_bounds.height },
+                   m_bounds_points[index]);
         update_center_point_location();
     }
     
