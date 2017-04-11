@@ -433,6 +433,56 @@ function Model(cursor) {
         document.body.removeChild(dlLink);
     });
 
+m_bar_menu.push_entry("Print", function(){
+
+        var canvasElement = document.getElementById('main-canvas');
+
+        // Used to crop out menu bar. 
+        var window_width = canvasElement.width;
+        var window_height = canvasElement.height;
+        // Create temporary canvas with elements but without menu bar. 
+        var tempCanvas = document.createElement("canvas"),
+        tCtx = tempCanvas.getContext("2d");
+       
+        tCtx.canvas.width = window_width;
+        tCtx.canvas.height = window_height - window_height/7;
+        var x_start = 0;
+        var y_start_org = window_height/7;
+        var y_start_copy = 0;
+        var width = window_width ;
+        var height = window_height - window_height/7;
+      
+        // Create and download image. 
+        tCtx.drawImage(canvasElement, 
+            x_start, 
+            y_start_org, 
+            width,  
+            height, 
+            x_start, 
+            y_start_copy, 
+            width, 
+            height);
+        var MIME_TYPE = "image/png";
+
+            canvasElement.style.display = 'none';
+            //document.body.removeChild(canvasElement);
+
+            document.body.appendChild(tempCanvas); // adds the canvas to the body element
+            window.print()
+            document.body.removeChild(tempCanvas);
+
+            canvasElement.style.display = 'block';
+            // document.body.appendChild(canvasElement); // adds the canvas to the body element
+
+         // window.open(tempCanvas.toDataURL(MIME_TYPE), '_blank')
+
+    });
+
+
+
+
+
+
     /*m_bar_menu.push_entry("Redo", function(){
         console.log("Redo");
         m_lines.push(last_undone_line);
