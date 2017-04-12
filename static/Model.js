@@ -445,7 +445,7 @@ function Model(cursor) {
             a.click()
         }
 
-        //saveText( myJSON, "filename.json" );
+        saveText( myJSON, "filename.json" );
 
     });
 
@@ -454,7 +454,14 @@ function Model(cursor) {
     m_bar_menu.push_entry("Import", function(){
         console.log("Import!");
 
-        alert(JSON.parse(temp_global))
+        document.getElementById("file_input").click();
+
+
+   
+        console.log("me here")
+
+
+
 
         // Grab file from local user file system
         // Store into obj
@@ -475,6 +482,18 @@ function Model(cursor) {
         // m_diagram_objects = obj;
 
     });
+
+    m_bar_menu.push_entry("Import load", function(){
+
+     $('#file_input').submit(function() {
+            // Get all the forms elements and their values in one step
+            var values = $(this).serialize();
+
+            console.log($(this).serialize())
+
+
+        });
+     });
 
     // Saves object as png. 
     m_bar_menu.push_entry("Save", function(){
