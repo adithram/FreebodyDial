@@ -125,12 +125,4 @@ function Ellipse() {
             draw_bounds_as_black_outlined_box(context, fp_bounds, 'black');
         }
     }
-
-    this.expose = function(func) { 
-        //Empty
-    }
-
-    this.point_within = function(func) {
-        // Empty
-    }
 }

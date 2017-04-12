@@ -29,34 +29,91 @@ function closeTab() {
 }
 </script>
 
+<script>
+function openVideo(){
+	function openInNewTab(url) {
+      var win = window.open(url, '_blank');
+      win.focus();
+    }
+
+
+    openInNewTab("https://www.youtube.com");
+}
+
+</script>
+
 
 </head>
 <body>
 
 <center><h1>Instructions for Using the Freedbody Dial Application</h1></center>
 
-<p>
-  <a class="btn btn-primary btn-lg" data-toggle="line" aria-expanded="false" aria-controls="lineInstr">
-    Draw Lines
-  </a>
-  <button class="btn btn-primary btn-lg" type="button" data-toggle="collapse" data-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">
-    Button with data-target
-  </button>
-</p>
-<div class="collapse" id="collapseExample">
-  <div class="card card-block">
-    Anim pariatur cliche reprehenderit, enim eiusmod high life accusamus terry richardson ad squid. Nihil anim keffiyeh helvetica, craft beer labore wes anderson cred nesciunt sapiente ea proident.
+<br>
+
+<center><button type="button" onclick = "openVideo()" class="btn btn-info btn-lg">In-Depth Tutorial Video</button>
+
+<button type="button" onclick = "closeTab()" class="btn btn-danger btn-lg">Close Help Menu</button>
+</center>
+
+<br>
+
+<div class="panel panel-danger">
+  <div class="panel-heading">
+    <h3 class="panel-title"><center>How to Draw!</center></h3>
+  </div>
+  <div class="panel-body">
+    1) Select the shape you want (line or polygon) from the menu.<br>
+    2) To draw a line, click and then drag the cursor until desired length is achieved.<br>
+    3) To draw a polygon, click and drag line. When new corner desired click again. Return to start point to close.<br>
   </div>
 </div>
 
-<div class="line" id="collapseExample">
-  <div class="card card-block">
-    Anim pariatur cliche reprehenderit, enim eiusmod high life accusamus terry richardson ad squid. Nihil anim keffiyeh helvetica, craft beer labore wes anderson cred nesciunt sapiente ea proident.
+<div class="panel panel-success">
+  <div class="panel-heading">
+    <h3 class="panel-title"><center>How to Edit!</center></h3>
+  </div>
+  <div class="panel-body">
+    1) Select edit mode from the menu.<br>
+    2) To resize, select a yellow corner control point and drag.<br>
+    3) To translate, select the blue square and drag and click accordingly to desired location.<br>
   </div>
 </div>
 
-<center><button type="button" onclick = "closeTab()" class="btn btn-danger btn-lg btn-block">Close</button></center>
+<div class="panel panel-info">
+  <div class="panel-heading">
+    <h3 class="panel-title"><center>How to Save!</center></h3>
+  </div>
+  <div class="panel-body">
+    1) Select group mode from the menu.<br>
+    2) Select the objects you desire to group with your cursor. They will show edit points when selected.<br>
+    3) Select 'Group Done' when you are done selecting the desired objects.<br>
+  </div>
+</div>
 
+<div class="panel panel-warning">
+  <div class="panel-heading">
+    <h3 class="panel-title"><center>How to Undo!</center></h3>
+  </div>
+  <div class="panel-body">
+    1) Select save from the menu.<br>
+    2) If browser settings are set up so, select location and file name in popup window.<br>
+  </div>
+</div>
+
+<div class="panel panel-danger">
+  <div class="panel-heading">
+    <h3 class="panel-title"><center>How to Print!</center></h3>
+  </div>
+  <div class="panel-body">
+    1) Select print mode from the menu.<br>
+    2) Modify print options in print menu and print.<br>
+  </div>
+</div>
+
+
+
+<!-- <center><button type="button" onclick = "closeTab()" class="btn btn-danger btn-lg btn-block">Close Help Menu</button></center>
+ -->
 
 </body>
 </html>
