@@ -481,6 +481,16 @@ function Model(cursor) {
 
                 }
 
+                var x_start = parseFloat(data[1]);
+                var y_start = parseFloat(data[3]);
+                var x_end = parseFloat(data[5]);
+                var y_end = parseFloat(data[7]);
+
+                alert(x_start);
+                alert(y_start);
+                alert(x_end);
+                alert(y_end);
+
                 // Recreate object using information stored in data.
 
                 // Push to m_diagram_objects
