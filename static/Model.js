@@ -21,6 +21,8 @@
 
 "use strict";
 
+var temp_global;
+
 // Less behavioral and more assertation. 
 (function(){
     // "concept checking"
@@ -421,13 +423,20 @@ function Model(cursor) {
     m_bar_menu.push_entry("Export", function(){
         console.log("Export!");
 
-        var obj_array = [];
+        // alert(m_diagram_objects)
+
+        // var myJSON = JSON.stringify(m_diagram_objects)
+        // alert(myJSON)
+
+
+        var product_str = "";
         m_diagram_objects.forEach(function(item) {
-                item.expose(function(obj) { obj_array[obj_array.length] = obj; });
+                item.expose(function(obj) { product_str += JSON.stringify(obj) });
         });
 
-
-        var myJSON = JSON.stringify(obj_array);
+        var myJSON = JSON.stringify(product_str);
+        alert(myJSON);
+        temp_global = myJSON;
 
         function saveText(text, filename){
             var a = document.createElement('a');
@@ -436,7 +445,7 @@ function Model(cursor) {
             a.click()
         }
 
-        saveText( myJSON, "filename.json" );
+        //saveText( myJSON, "filename.json" );
 
     });
 
@@ -444,6 +453,8 @@ function Model(cursor) {
     // Function that handles import of object
     m_bar_menu.push_entry("Import", function(){
         console.log("Import!");
+
+        alert(JSON.parse(temp_global))
 
         // Grab file from local user file system
         // Store into obj
