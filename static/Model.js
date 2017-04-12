@@ -423,21 +423,17 @@ function Model(cursor) {
     m_bar_menu.push_entry("Export", function(){
         console.log("Export!");
 
-        // alert(m_diagram_objects)
-
-        // var myJSON = JSON.stringify(m_diagram_objects)
-        // alert(myJSON)
-
-
+        // Go through the products, and call expose to create string. Concatenate all together
         var product_str = "";
         m_diagram_objects.forEach(function(item) {
                 item.expose(function(obj) { product_str += JSON.stringify(obj) });
         });
 
+        // Stringify entire concatenated item
         var myJSON = JSON.stringify(product_str);
-        alert(myJSON);
         temp_global = myJSON;
 
+        //Function to save the item locally.
         function saveText(text, filename){
             var a = document.createElement('a');
             a.setAttribute('href', 'data:text/plain;charset=utf-u,'+encodeURIComponent(text));
@@ -445,7 +441,8 @@ function Model(cursor) {
             a.click()
         }
 
-        //saveText( myJSON, "filename.json" );
+        //Function that saves the json item locally. 
+        saveText( myJSON, "filename.json" );
 
     });
 
@@ -454,25 +451,72 @@ function Model(cursor) {
     m_bar_menu.push_entry("Import", function(){
         console.log("Import!");
 
-        alert(JSON.parse(temp_global))
+        // Parse the object, and split it according to delimitters
+        var obj_string = JSON.parse(temp_global);
+        var key_words = /\b(Line|Polygon|Ellipse)\b/;
+        var objects = obj_string.split(key_words);
+        //Remove useless first item.
+        objects.splice(0,1)
+        
 
-        // Grab file from local user file system
-        // Store into obj
-        // var MIME_TYPE = "application/json";
-        // var imgURL = tempCanvas.toDataURL(MIME_TYPE);
-        // var dlLink = document.createElement('a');
-        // dlLink.download = fileName;
-        // dlLink.href = imgURL;
-        // dlLink.dataset.downloadurl = [MIME_TYPE, dlLink.download, dlLink.href].join(':');
-        // document.body.appendChild(dlLink);
-        // dlLink.click();
-        // document.body.removeChild(dlLink);
-        // var file = 
+        // Iterate through array, read type, and regenerate object accordingly. 
+        // Push to m_diagram_objects afterwards
+        // Increment by 2, because every two objects consitutes a pair, first of it's
+        //      type, then of the data.
+        for(var i = 0; i < objects.length; i+=2){
 
-        // var obj = JSON.parse(temp_global);
-        // alert(obj);
+            //If it is a line
+            if(objects[i] == "Line"){
+                var split_words = /\b(x|y)\b/;
+                var data = objects[i+1].split(split_words);
+                //Remove useless first item.
+                data.splice(0,1);
+                for(var j = 0; j < data.length; j++){
+                    //If the item is a value for the x or y coordinate
+                    if(data[j] != "x" && data[j] != "y"){
+                        //Strip of non-numeric values and non-decimals
+                        data[j] = data[j].replace(/[^0-9.]/g, '');
+                    }
 
-        // m_diagram_objects = obj;
+
+                }
+
+                // Recreate object using information stored in data.
+
+                // Push to m_diagram_objects
+            }
+            //If it is a polygon
+            else if(objects[i] == "Polygon"){
+                var split_words = /\b(x|y)\b/;
+                var data = objects[i+1].split(split_words);
+                //Remove useless first item.
+                data.splice(0,1);
+                for(var j = 0; j < data.length; j++){
+                    if(data[j] != "x" && data[j] != "y"){
+                        data[j] = data[j].replace(/[^0-9.]/g, '');
+                    }
+                }
+
+                // Recreate object using information stored in data
+
+                // Push to m_diagram_objects
+            }
+            // If it is a ellipse
+            else if(objects[i] == "Ellipse"){
+                alert("in ellipse");
+                // Code needs to be added 
+            }
+            //else - bad situation
+            else{
+                var error_msg = "Bad type of " + objects[i];
+                console.log(error_msg);
+            }
+
+        }
+
+
+
+
 
     });
 
