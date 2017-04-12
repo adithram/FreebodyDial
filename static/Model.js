@@ -417,6 +417,54 @@ function Model(cursor) {
         m_diagram_objects.pop();
     });
 
+    // Function that handles export of object
+    m_bar_menu.push_entry("Export", function(){
+        console.log("Export!");
+
+        var obj_array = [];
+        m_diagram_objects.forEach(function(item) {
+                item.expose(function(obj) { obj_array[obj_array.length] = obj; });
+        });
+
+
+        var myJSON = JSON.stringify(obj_array);
+
+        function saveText(text, filename){
+            var a = document.createElement('a');
+            a.setAttribute('href', 'data:text/plain;charset=utf-u,'+encodeURIComponent(text));
+            a.setAttribute('download', filename);
+            a.click()
+        }
+
+        saveText( myJSON, "filename.json" );
+
+    });
+
+
+    // Function that handles import of object
+    m_bar_menu.push_entry("Import", function(){
+        console.log("Import!");
+
+        // Grab file from local user file system
+        // Store into obj
+        // var MIME_TYPE = "application/json";
+        // var imgURL = tempCanvas.toDataURL(MIME_TYPE);
+        // var dlLink = document.createElement('a');
+        // dlLink.download = fileName;
+        // dlLink.href = imgURL;
+        // dlLink.dataset.downloadurl = [MIME_TYPE, dlLink.download, dlLink.href].join(':');
+        // document.body.appendChild(dlLink);
+        // dlLink.click();
+        // document.body.removeChild(dlLink);
+        // var file = 
+
+        // var obj = JSON.parse(temp_global);
+        // alert(obj);
+
+        // m_diagram_objects = obj;
+
+    });
+
     // Saves object as png. 
     m_bar_menu.push_entry("Save", function(){
         var currentdate = new Date(); 
