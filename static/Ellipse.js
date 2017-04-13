@@ -21,32 +21,63 @@
 
 "use strict";
 
+/*******************************************************************************************************
+    CONCEPT OF THE OPERATION
+        1) User first clicks to set origin
+        2) User holds mouse to set vertex, then releases to set vertex location
+        3) User clicks a second time to set co-vertex
+        4) Canvas draws ellipse based on vertex and co-vertex locations, based on the following function
+
+            function ellipse(context, m_co_vertex.x, m_co_vertex.y, m_vertex.x, m_vertex.y){
+                context.save(); // save state
+                context.beginPath();
+
+                context.translate(m_co_vertex.x-m_vertex.x, m_co_vertex.y-m_vertex.y);
+                context.scale(m_vertex.x, m_vertex.y);
+                context.arc(1, 1, 1, 0, 2 * Math.PI, false);
+
+                context.restore(); // restore to original state
+                context.stroke();
+            }
+
+********************************************************************************************************/
+
+function find_angle(A,B,C) {
+    var AB = Math.sqrt(Math.pow(B.x-A.x,2)+ Math.pow(B.y-A.y,2));    
+    var BC = Math.sqrt(Math.pow(B.x-C.x,2)+ Math.pow(B.y-C.y,2)); 
+    var AC = Math.sqrt(Math.pow(C.x-A.x,2)+ Math.pow(C.y-A.y,2));
+    return Math.acos((BC*BC+AB*AB-AC*AC)/(2*BC*AB));
+}
+
 function Ellipse() {
     assert_new.check(this);
-    var m_radii = zero_vect();
-    // location means origin
-    var m_location = zero_vect();
+    var m_vertex = zero_vect();
+    var m_co_vertex = zero_vect();
+    var m_origin = zero_vect();
     
     var m_first_point = undefined;
     var m_finished_creating = false;
     var self = this;
     
     // Default values. 
-    this.set_location = function(x_, y_) { m_location = { x: x_, y: y_ }; }
-    this.set_radii = function(x_, y_) { m_radii = { x: x_, y: y_ }; }
+    this.set_location = function(x_, y_) { m_origin = { x: x_, y: y_ }; }
+    this.set_vertex = function(x_, y_) { m_vertex = { x: x_, y: y_ }; }
+    this.set_co_vertex = function(x_, y_) { m_co_vertex = { x: x_, y: y_ }; }
     this.finished_creating = function() { return m_finished_creating; }
     this.highlight = function() {}
     this.unhighlight = function() {}
     this.enable_editing  = function() {}
     this.disable_editing = function() {}
         
-    this.point_within = undefined;
+    this.point_within = function() {
+
+    }
     this.explode = function() { return this; } 
     this.bounds = function() {
-        return { x : m_location.x - m_radii.x, 
-                 y : m_location.y - m_radii.y, 
-                 width : m_radii.x*2.0, 
-                 height: m_radii.y*2.0 }
+        return { x : m_origin.x - m_vertex.x, 
+                 y : m_origin.y - m_vertex.y, 
+                 width : m_vertex.x*2.0, 
+                 height: m_vertex.y*2.0 }
     }
     
     var creation_second_handle_cursor_click = function(cursor_obj) {
@@ -66,18 +97,19 @@ function Ellipse() {
             //var u = Vector.angle_between({ x: 1, y: 0 }, m_first_point);
             //var t = Vector.angle_between({ x: 1, y: 0 }, cur_loc      );
             var num = cur_loc.x**2*m_first_point.y**2 - cur_loc.y**2*m_first_point.x**2;
-            m_radii.x = Math.sqrt(Math.abs(num / (cur_loc.x**2 - m_first_point.x**2)));
-            m_radii.y = Math.sqrt(Math.abs(num / (cur_loc.y**2 - m_first_point.y**2)));
-            //m_radii.y = (cur_loc.x - m_first_point.x) / (Math.cos(t) - Math.cos(u));
-            //m_radii.x = (cur_loc.y - m_first_point.y) / (Math.sin(t) - Math.sin(u));
+            m_co_vertex.x = Math.sqrt(Math.abs(num / (cur_loc.x**2 - m_first_point.x**2)));
+            m_co_vertex.y = Math.sqrt(Math.abs(num / (cur_loc.y**2 - m_first_point.y**2)));
+            //m_vertex.y = (cur_loc.x - m_first_point.x) / (Math.cos(t) - Math.cos(u));
+            //m_vertex.x = (cur_loc.y - m_first_point.y) / (Math.sin(t) - Math.sin(u));
             if (Math.random() > 0.95) {
                 //console.log("angle values fp: "+u+" cur_pos: "+t);
-                console.log("radii values : (x: "+m_radii.x+", y: "+m_radii.y+")");
+                //console.log("m_co_vertex values : (x: "+m_co_vertex.x+", y: "+m_co_vertex.y+")");
             }
         }
         self.handle_cursor_click = function(cursor_obj) {
             if (!cursor_obj.is_pressed()) {
                 m_finished_creating = true;
+                console.log("Second click registered! We done :D");
                 self.handle_cursor_click = self.handle_cursor_move = function(_) {}
             }
         }
@@ -85,13 +117,12 @@ function Ellipse() {
     
     this.handle_cursor_click = function(cursor_obj) {
         if (cursor_obj.is_pressed()) {
-            m_location = cursor_obj.location();
+            m_origin = cursor_obj.location();
             console.log("ellipse location set");
-            return;
         }
         console.log("cursor move event function changed");
         self.handle_cursor_move = function(cursor_obj) {
-            m_radii.x = m_radii.y = Vector.distance(cursor_obj.location(), m_location);
+            m_vertex.x = m_vertex.y = Vector.distance(cursor_obj.location(), m_origin);
         }
         
         self.handle_cursor_click = creation_second_handle_cursor_click;
@@ -101,11 +132,13 @@ function Ellipse() {
     
     this.draw = function(context) {
         // save state
-        context.save();
+        /*context.save();
+
+        console.log("Drawing ellipse...");
 
         // scale context horizontally
-        context.translate(m_location.x, m_location.y);
-        context.scale    (m_radii.x   , m_radii.y   );
+        context.translate(m_origin.x, m_origin.y);
+        context.scale    (m_vertex.x   , m_vertex.y   );
         
         // draw circle which will be stretched into a proper Ellipse
         context.beginPath();
@@ -119,10 +152,50 @@ function Ellipse() {
         context.fill();
         context.lineWidth = 3;
         context.strokeStyle = 'black';
-        context.stroke();
-        if (m_first_point !== undefined) {
-            var fp_bounds = Vector.bounds_around(m_first_point, { x: 10, y: 10 });
-            draw_bounds_as_black_outlined_box(context, fp_bounds, 'black');
+        context.stroke();*/
+
+        if(m_finished_creating){
+            context.save();
+
+            /*var width = Vector.distance(m_origin, m_co_vertex);
+            var height = Vector.distance(m_origin, m_vertex);
+            context.beginPath();
+            context.moveTo(m_origin.x, m_origin.y - height / 2);
+
+            context.bezierCurveTo(
+                m_origin.x + width / 2, m_origin.y - height / 2,
+                m_origin.x + width / 2, m_origin.y + height / 2,
+                m_origin.x, m_origin.y + height / 2
+            );
+            context.bezierCurveTo(
+                m_origin.x - width / 2, m_origin.y + height / 2,
+                m_origin.x - width / 2, m_origin.y - height / 2,
+                m_origin.x, m_origin.y - height / 2
+            );
+
+            context.restore();*/
+            var major_radius = Vector.distance(m_origin, m_co_vertex);
+            var minor_radius = Vector.distance(m_origin, m_vertex);
+            //var rotation_angle = find_angle()
+            context.ellipse(m_origin.x, m_origin.y, major_radius, minor_radius, 0, 0, 2*Math.PI);
+
+            context.fillStyle = 'black';
+            context.fill();
+            context.closePath();
         }
+
+        else{
+            context.beginPath();
+            context.closePath();
+        }
+    }
+
+    this.expose = function() {
+        /*var gv = func({ type : "Ellipse", points : m_origin, m_vertex });
+        if (gv === undefined) return;
+        m_origin = gv.points[0];
+        m_vertex = gv.points[1];
+        this.disable_editing();
+        this.enable_editing();*/
     }
 }
