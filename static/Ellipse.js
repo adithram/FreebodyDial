@@ -84,8 +84,9 @@ function Ellipse() {
         if (cursor_obj.is_pressed()) return; // release event only
         // initial function
         console.log('moving to final step...')
-        m_first_point = cursor_obj.location();
-        self.handle_cursor_move = function(cursor_obj) {
+        m_vertex = cursor_obj.location();
+        console.log("Vertex Location: ", m_vertex.x, ", ", m_vertex.y);
+        /*self.handle_cursor_move = function(cursor_obj) {
             var cur_loc = cursor_obj.location();
             // x1 = x0 + a * cos(t) -> (x1 - x0)/cos(t) = a 
             // y1 = y0 + b * sin(t) -> (y1 - y0)/sin(t) = b
@@ -105,11 +106,12 @@ function Ellipse() {
                 //console.log("angle values fp: "+u+" cur_pos: "+t);
                 //console.log("m_co_vertex values : (x: "+m_co_vertex.x+", y: "+m_co_vertex.y+")");
             }
-        }
+        }*/
         self.handle_cursor_click = function(cursor_obj) {
             if (!cursor_obj.is_pressed()) {
                 m_finished_creating = true;
                 console.log("Second click registered! We done :D");
+                m_co_vertex = cursor_obj.location();
                 self.handle_cursor_click = self.handle_cursor_move = function(_) {}
             }
         }
@@ -118,11 +120,15 @@ function Ellipse() {
     this.handle_cursor_click = function(cursor_obj) {
         if (cursor_obj.is_pressed()) {
             m_origin = cursor_obj.location();
-            console.log("ellipse location set");
+            console.log("ellipse location set at ", m_origin.x, ", ", m_origin.y);
         }
         console.log("cursor move event function changed");
         self.handle_cursor_move = function(cursor_obj) {
-            m_vertex.x = m_vertex.y = Vector.distance(cursor_obj.location(), m_origin);
+            m_vertex = cursor_obj.location();
+            if(!cursor_obj.is_pressed()){
+                console.log("Mouse released. STOP DRAWING.");
+                return;
+            }
         }
         
         self.handle_cursor_click = creation_second_handle_cursor_click;
@@ -154,8 +160,16 @@ function Ellipse() {
         context.strokeStyle = 'black';
         context.stroke();*/
 
+        context.beginPath();
+        context.moveTo(m_origin.x, m_origin.y);
+        context.lineTo(m_vertex.x, m_vertex.y);
+        context.lineWidth = 5;
+        context.strokeStyle = 'black';
+        context.stroke();
+        context.closePath();
+
         if(m_finished_creating){
-            context.save();
+            //context.save();
 
             /*var width = Vector.distance(m_origin, m_co_vertex);
             var height = Vector.distance(m_origin, m_vertex);
@@ -174,18 +188,27 @@ function Ellipse() {
             );
 
             context.restore();*/
-            var major_radius = Vector.distance(m_origin, m_co_vertex);
+
+            // Attempt 2
+            /*var major_radius = Vector.distance(m_origin, m_co_vertex);
             var minor_radius = Vector.distance(m_origin, m_vertex);
             //var rotation_angle = find_angle()
             context.ellipse(m_origin.x, m_origin.y, major_radius, minor_radius, 0, 0, 2*Math.PI);
 
             context.fillStyle = 'black';
-            context.fill();
+            context.fill();*/
+            context.beginPath();
+            context.moveTo(m_origin.x, m_origin.y);
+            context.lineTo(m_co_vertex.x, m_co_vertex.y);
+            context.lineWidth = 5;
+            context.strokeStyle = 'black';
+            context.stroke();
             context.closePath();
         }
 
         else{
             context.beginPath();
+
             context.closePath();
         }
     }
