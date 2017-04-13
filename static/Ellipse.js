@@ -42,6 +42,7 @@
 
 ********************************************************************************************************/
 
+// from http://stackoverflow.com/questions/17763392/how-to-calculate-in-javascript-angle-between-3-points
 function find_angle(A,B,C) {
     var AB = Math.sqrt(Math.pow(B.x-A.x,2)+ Math.pow(B.y-A.y,2));    
     var BC = Math.sqrt(Math.pow(B.x-C.x,2)+ Math.pow(B.y-C.y,2)); 
@@ -54,8 +55,7 @@ function Ellipse() {
     var m_vertex = zero_vect();
     var m_co_vertex = zero_vect();
     var m_origin = zero_vect();
-    
-    var m_first_point = undefined;
+    var m_set_co_vertex = false;
     var m_finished_creating = false;
     var self = this;
     
@@ -64,14 +64,14 @@ function Ellipse() {
     this.set_vertex = function(x_, y_) { m_vertex = { x: x_, y: y_ }; }
     this.set_co_vertex = function(x_, y_) { m_co_vertex = { x: x_, y: y_ }; }
     this.finished_creating = function() { return m_finished_creating; }
+
+    // unused functions?
     this.highlight = function() {}
     this.unhighlight = function() {}
     this.enable_editing  = function() {}
     this.disable_editing = function() {}
-        
-    this.point_within = function() {
+    this.point_within = function() {}
 
-    }
     this.explode = function() { return this; } 
     this.bounds = function() {
         return { x : m_origin.x - m_vertex.x, 
@@ -85,9 +85,17 @@ function Ellipse() {
         // initial function
         console.log('moving to final step...')
         m_vertex = cursor_obj.location();
-        console.log("Vertex Location: ", m_vertex.x, ", ", m_vertex.y);
-        /*self.handle_cursor_move = function(cursor_obj) {
-            var cur_loc = cursor_obj.location();
+        m_set_co_vertex = true;
+        console.log("Vertex Location: ", m_vertex);
+        console.log("Origin Location: ", m_origin);
+        var A = m_vertex;
+        var B = m_origin;
+        var C = { x: m_vertex.x, y: m_origin.y };
+        console.log("Point of reference for angle calculations: ", C);
+        var check_angle = find_angle(A,B,C);
+        console.log("What's our calculated angle of rotation? ", check_angle);
+        self.handle_cursor_move = function(cursor_obj) {
+            m_co_vertex = cursor_obj.location();
             // x1 = x0 + a * cos(t) -> (x1 - x0)/cos(t) = a 
             // y1 = y0 + b * sin(t) -> (y1 - y0)/sin(t) = b
             // x2 = x0 + a * cos(u)
@@ -97,16 +105,16 @@ function Ellipse() {
             // y1 - y2 = b * ( sin(t) - sin(u) )
             //var u = Vector.angle_between({ x: 1, y: 0 }, m_first_point);
             //var t = Vector.angle_between({ x: 1, y: 0 }, cur_loc      );
-            var num = cur_loc.x**2*m_first_point.y**2 - cur_loc.y**2*m_first_point.x**2;
-            m_co_vertex.x = Math.sqrt(Math.abs(num / (cur_loc.x**2 - m_first_point.x**2)));
-            m_co_vertex.y = Math.sqrt(Math.abs(num / (cur_loc.y**2 - m_first_point.y**2)));
+            // var num = cur_loc.x**2*m_first_point.y**2 - cur_loc.y**2*m_first_point.x**2;
+            // m_co_vertex.x = Math.sqrt(Math.abs(num / (cur_loc.x**2 - m_first_point.x**2)));
+            // m_co_vertex.y = Math.sqrt(Math.abs(num / (cur_loc.y**2 - m_first_point.y**2)));
             //m_vertex.y = (cur_loc.x - m_first_point.x) / (Math.cos(t) - Math.cos(u));
             //m_vertex.x = (cur_loc.y - m_first_point.y) / (Math.sin(t) - Math.sin(u));
             if (Math.random() > 0.95) {
                 //console.log("angle values fp: "+u+" cur_pos: "+t);
                 //console.log("m_co_vertex values : (x: "+m_co_vertex.x+", y: "+m_co_vertex.y+")");
             }
-        }*/
+        }
         self.handle_cursor_click = function(cursor_obj) {
             if (!cursor_obj.is_pressed()) {
                 m_finished_creating = true;
@@ -163,12 +171,16 @@ function Ellipse() {
         context.beginPath();
         context.moveTo(m_origin.x, m_origin.y);
         context.lineTo(m_vertex.x, m_vertex.y);
-        context.lineWidth = 5;
-        context.strokeStyle = 'black';
+
+        // draw horizontal axis
+        context.moveTo(m_origin.x, m_origin.y);
+        context.lineTo(m_vertex.x, m_origin.y);
+        context.lineWidth = 3;
+        context.strokeStyle = 'red';
         context.stroke();
         context.closePath();
 
-        if(m_finished_creating){
+        if(m_set_co_vertex){
             //context.save();
 
             /*var width = Vector.distance(m_origin, m_co_vertex);
