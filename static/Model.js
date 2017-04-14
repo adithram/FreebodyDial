@@ -442,7 +442,7 @@ function Model(cursor) {
             a.click()
         }
 
-        var filename = "diagram_" + filename_count;
+        var filename = "diagram_" + filename_count + ".json";
         filename_count = filename_count + 1;
         saveText( myJSON, filename);
 
