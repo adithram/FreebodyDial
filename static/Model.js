@@ -21,7 +21,9 @@
 
 "use strict";
 
-var temp_global;
+//Global for keeping track of save files.
+var filename_count = 0;
+
 
 // Less behavioral and more assertation. 
 (function(){
@@ -431,7 +433,6 @@ function Model(cursor) {
 
         // Stringify entire concatenated item
         var myJSON = JSON.stringify(product_str);
-        temp_global = myJSON;
 
         //Function to save the item locally.
         function saveText(text, filename){
@@ -441,8 +442,9 @@ function Model(cursor) {
             a.click()
         }
 
-
-        saveText( myJSON, "filename.json" );
+        var filename = "diagram_" + filename_count;
+        filename_count = filename_count + 1;
+        saveText( myJSON, filename);
 
     });
 
