@@ -454,99 +454,108 @@ function Model(cursor) {
         document.getElementById("file_input").click();
         var file
         document.getElementById("file_input").onchange = function() {
+
+            // HANDLING FILE INPUT
              $('#file_input').submit();
             file = document.getElementById('file_input').files[0];
-            console.log(file)
-
-            var text = file.responseText;
-            console.log(text);
-            // Parse the object, and split it according to delimitters
-            var obj_string = JSON.parse(file);
-            console.log(obj_string);    
-            var key_words = /\b(Line|Polygon|Ellipse)\b/;
-            var objects = obj_string.split(key_words);
-            //Remove useless first item.
-            objects.splice(0,1)
             
+            function gotFile(file){
+                readAsText(file,function(str){
+                    var file_text = str;
 
-            // Iterate through array, read type, and regenerate object accordingly. 
-            // Push to m_diagram_objects afterwards
-            // Increment by 2, because every two objects consitutes a pair, first of it's
-            //      type, then of the data.
-            for(var i = 0; i < objects.length; i+=2){
-
-                //If it is a line
-                if(objects[i] == "Line"){
-                    var split_words = /\b(x|y)\b/;
-                    var data = objects[i+1].split(split_words);
+                    // PARSING JSON OBJECT    
+                    var key_words = /\b(Line|Polygon|Ellipse)\b/;
+                    var objects = file_text.split(key_words);
                     //Remove useless first item.
-                    data.splice(0,1);
-                    for(var j = 0; j < data.length; j++){
-                        //If the item is a value for the x or y coordinate
-                        if(data[j] != "x" && data[j] != "y"){
-                            //Strip of non-numeric values and non-decimals
-                            data[j] = data[j].replace(/[^0-9.]/g, '');
-                        }
+                    objects.splice(0,1)
+                    
 
+                    // Iterate through array, read type, and regenerate object accordingly. 
+                    // Push to m_diagram_objects afterwards
+                    // Increment by 2, because every two objects consitutes a pair, first of it's
+                    //      type, then of the data.
+                    for(var i = 0; i < objects.length; i+=2){
+
+                        //If it is a line
+                        if(objects[i] == "Line"){
+                            var split_words = /\b(x|y)\b/;
+                            var data = objects[i+1].split(split_words);
+                            //Remove useless first item.
+                            data.splice(0,1);
+                            for(var j = 0; j < data.length; j++){
+                                //If the item is a value for the x or y coordinate
+                                if(data[j] != "x" && data[j] != "y"){
+                                    //Strip of non-numeric values and non-decimals
+                                    data[j] = data[j].replace(/[^0-9.]/g, '');
+                                }
+
+
+                            }
+
+                            var x_start = parseFloat(data[1]);
+                            var y_start = parseFloat(data[3]);
+                            var x_end = parseFloat(data[5]);
+                            var y_end = parseFloat(data[7]);
+
+                            alert(x_start + " " + y_start + " " + x_end + " " + y_end);
+
+                            // Recreate object using information stored in data.
+
+                            // Push to m_diagram_objects
+                        }
+                        //If it is a polygon
+                        else if(objects[i] == "Polygon"){
+                            var split_words = /\b(x|y)\b/;
+                            var data = objects[i+1].split(split_words);
+                            //Remove useless first item.
+                            data.splice(0,1);
+                            for(var j = 0; j < data.length; j++){
+                                if(data[j] != "x" && data[j] != "y"){
+                                    data[j] = data[j].replace(/[^0-9.]/g, '');
+                                }
+                            }
+
+                       
+
+                        // Recreate object using information stored in data.
+
+                            // Push to m_diagram_objects
+                        }
+                        // If it is a ellipse
+                        else if(objects[i] == "Ellipse"){
+                            alert("in ellipse");
+                            // Code needs to be added 
+                        }
+                        //else - bad situation
+                        else{
+                            var error_msg = "Bad type of " + objects[i];
+                            console.log(error_msg);
+                        }
 
                     }
 
-                    // Recreate object using information stored in data.
 
-                    // Push to m_diagram_objects
-                }
-                //If it is a polygon
-                else if(objects[i] == "Polygon"){
-                    var split_words = /\b(x|y)\b/;
-                    var data = objects[i+1].split(split_words);
-                    //Remove useless first item.
-                    data.splice(0,1);
-                    for(var j = 0; j < data.length; j++){
-                        if(data[j] != "x" && data[j] != "y"){
-                            data[j] = data[j].replace(/[^0-9.]/g, '');
-                        }
-                    }
 
-                var x_start = parseFloat(data[1]);
-                var y_start = parseFloat(data[3]);
-                var x_end = parseFloat(data[5]);
-                var y_end = parseFloat(data[7]);
 
-                alert(x_start);
-                alert(y_start);
-                alert(x_end);
-                alert(y_end);
 
-                // Recreate object using information stored in data.
-
-                    // Push to m_diagram_objects
-                }
-                // If it is a ellipse
-                else if(objects[i] == "Ellipse"){
-                    alert("in ellipse");
-                    // Code needs to be added 
-                }
-                //else - bad situation
-                else{
-                    var error_msg = "Bad type of " + objects[i];
-                    console.log(error_msg);
-                }
-
+                });
             }
+
+            function readAsText(file,callback) {
+                var reader = new FileReader();
+                reader.onloadend = function() {
+                 callback(reader.result);
+                };
+                reader.readAsText(file);
+            }
+
+            gotFile(file);
+
+
+            
         };
     });
 
-    m_bar_menu.push_entry("Import load", function(){
-
-     $('#file_input').submit(function() {
-            // Get all the forms elements and their values in one step
-            var values = $(this).serialize();
-
-            console.log($(this).serialize())
-
-
-        });
-     });
 
     // Saves object as png. 
     m_bar_menu.push_entry("Save", function(){
