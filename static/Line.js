@@ -420,6 +420,7 @@ function Line() {
             m_control_points.draw(context);
     }
 
+
     // adds bounds
     this.bounds = function() {
         var x_ = Math.min(m_point_a.x, m_point_b.x);

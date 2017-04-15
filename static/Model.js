@@ -517,11 +517,35 @@ function Model(cursor) {
                                 }
                             }
 
+                            //every grouping of four points represents a corner
+                            // i.e. x, x_val, y, y_val
+                            var num_corners = data.length / 4;
+
+                            var last_j;
+
+                            for (var j = 0; j < data.length - 4; j+=4){
+                                var current_x = parseFloat(data[j+1]);
+                                var current_y = parseFloat(data[j+3]);
+                                var end_x = parseFloat(data[j+5]);
+                                var end_y = parseFloat(data[j+7]);
+                                alert("line: " + current_x + " " + current_y + " " + end_x + " " + end_y);
+                                last_j = j;
+                            }
+
+                            //Link last point back to start
+
+                            var start_x = parseFloat(data[1]);
+                            var start_y = parseFloat(data[3]);
+                            var last_x = parseFloat(data[last_j + 5]);
+                            var last_y = parseFloat(data[last_j + 7]);
+                            alert("last line: " + start_x + " " + start_y + " " + last_x + " " + last_y);
+
                        
 
                         // Recreate object using information stored in data.
 
-                            // Push to m_diagram_objects
+                        // Push to m_diagram_objects
+
                         }
                         // If it is a ellipse
                         else if(objects[i] == "Ellipse"){
