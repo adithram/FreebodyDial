@@ -42,11 +42,15 @@ function BarMenu() {
     var handle_click_inside = function(entry) {
         // Asserts that the current click is different than the previous click. 
         // A change has occured
-        if (m_previous_press !== entry) {
-            if (m_previous_press !== undefined)
-                m_previous_press.on_mode_exit(entry, m_previous_press);
-            entry.callback(entry);
-        }
+        // if (m_previous_press !== entry) {
+        //     if (m_previous_press !== undefined)
+        //         m_previous_press.on_mode_exit(entry, m_previous_press);
+        //     entry.callback(entry);
+        // }
+
+        if (m_previous_press !== undefined)
+            m_previous_press.on_mode_exit(entry, m_previous_press);
+        entry.callback(entry);
         // Reset the previous press
         m_previous_press = entry;
     }

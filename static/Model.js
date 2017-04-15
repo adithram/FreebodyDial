@@ -535,7 +535,7 @@ function Model(cursor) {
                             //Link last point back to start
 
                             var start_x = parseFloat(data[1]);
-                            var start_y = parseFloat(data[3]);
+                            var start_y = parseFloat(data[j+3]);
                             var last_x = parseFloat(data[last_j + 5]);
                             var last_y = parseFloat(data[last_j + 7]);
                             alert("last line: " + start_x + " " + start_y + " " + last_x + " " + last_y);
