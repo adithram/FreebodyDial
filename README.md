@@ -4,6 +4,9 @@
 # FreebodyDial
 Dial for free body diagram design. Designed for usability regardless of user disability. 
 
+# Omega Release Insturction
+- Launch canvas.html located in the templates directory.
+
 # Beta Release Instructions
 - Launch canvas.html located in the templates directory. 
 - When editing: Line up square next to cursor with square near object to manipulate;
