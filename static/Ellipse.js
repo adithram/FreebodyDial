@@ -22,23 +22,14 @@
 "use strict";
 
 /*******************************************************************************************************
-    CONCEPT OF THE OPERATION
-        1) User first clicks to set origin
-        2) User holds mouse to set vertex, then releases to set vertex location
-        3) User clicks a second time to set co-vertex
-        4) Canvas draws ellipse based on vertex and co-vertex locations, based on the following function
-
-            function ellipse(context, m_co_vertex.x, m_co_vertex.y, m_vertex.x, m_vertex.y){
-                context.save(); // save state
-                context.beginPath();
-
-                context.translate(m_co_vertex.x-m_vertex.x, m_co_vertex.y-m_vertex.y);
-                context.scale(m_vertex.x, m_vertex.y);
-                context.arc(1, 1, 1, 0, 2 * Math.PI, false);
-
-                context.restore(); // restore to original state
-                context.stroke();
-            }
+    CONCEPT OF THE OPERATION - user will set boundaries for ellipse by clicking, dragging mouse, and releasing
+        1) User clicks to set origin
+        2) User holds mouse to determine size of the rectangular boundary
+            - User will drag the mouse to 1 of the 4 corners of the rectangular boundary (Quadrant 1 boundary)
+                and set_boundaries() will calculate the location of the other 3 corners
+        3) User releases mouse to set size of the rectangular boundary
+        4) User moves mouse to determine ellipse's angle of rotation
+        5) User clicks mouse to anchor ellipse in place
 
 ********************************************************************************************************/
 
@@ -52,17 +43,22 @@ function find_angle(A,B,C) {
 
 function Ellipse() {
     assert_new.check(this);
-    var m_vertex = zero_vect();
-    var m_co_vertex = zero_vect();
+    var q1_boundary = zero_vect();
+    var q2_boundary = zero_vect();
+    var q3_boundary = zero_vect();
+    var q4_boundary = zero_vect();
+    var x_axis = zero_vect();
     var m_origin = zero_vect();
-    var m_set_co_vertex = false;
+    var m_major_vertex = 0;
+    var m_minor_vertex = 0;
+    var angle_of_rotation = 0;
+    var relative_zero = zero_vect();
+    var m_boundaries_set = false;
     var m_finished_creating = false;
     var self = this;
     
     // Default values. 
-    this.set_location = function(x_, y_) { m_origin = { x: x_, y: y_ }; }
-    this.set_vertex = function(x_, y_) { m_vertex = { x: x_, y: y_ }; }
-    this.set_co_vertex = function(x_, y_) { m_co_vertex = { x: x_, y: y_ }; }
+    this.set_location = function(x_, y_) { origin = { x: x_, y: y_ }; }
     this.finished_creating = function() { return m_finished_creating; }
 
     // unused functions?
@@ -74,52 +70,71 @@ function Ellipse() {
 
     this.explode = function() { return this; } 
     this.bounds = function() {
-        return { x : m_origin.x - m_vertex.x, 
-                 y : m_origin.y - m_vertex.y, 
-                 width : m_vertex.x*2.0, 
-                 height: m_vertex.y*2.0 }
+        return { q1_boundary,
+                 q2_boundary,
+                 q3_boundary,
+                 q4_boundary }
+    }
+
+    // Calculates all 4 points of the rectangular boundary surrounding the ellipse
+    // REQUIRES: (q1_boundary.x, q1_boundary.y), the Quadrant 1 boundary, AKA the top right corner boundary
+    //           (x_axis_x, x_axis.x), the location of the relative x axis limit for the ellipse on the canvas
+    //              NOTE: Also, the location of the midpoint of the right side of the rectangular boundary
+    // MODIFIES: this.boundaries
+    // EFFECTS: returns the 4 points of the rectangular boundary surrounding the ellipse
+    this.set_boundaries = function() { 
+
+        //NOTE: q2_boundary's x value can be calculated by subtracting 2 of the x_axis_x lengths from q1_boundary.x
+        //      q2_boundary's y value is the same as q1_boundary.y
+        var q2_x = q1_boundary.x - 2*(x_axis.x - m_origin.x);
+        var q2_y = q1_boundary.y;
+        q2_boundary = {x: q2_x, y: q2_y};
+
+        // NOTE: q3_boundary's x value is the same as q2_x
+        //       q3_boundary's y value can be calculated by subtracting 2 of the q2_y lengths from q2_y
+        var q3_x = q2_x;
+        var q3_y = q2_y - 2*(q2_y - m_origin.y);
+        q3_boundary = {x: q3_x, y: q3_y};
+
+        //NOTE: q4_boundary's x value is the same as q1_boundary.x
+        //      q4_boundary's y value is the same as q3_y
+        var q4_x = q1_boundary.x;
+        var q4_y = q3_y;
+        q4_boundary = {x: q4_x, y: q4_y};
+
+        // console.log("Q1 Boundary: ", q1_boundary);
+        // console.log("Q2 Boundary: ", q2_boundary);
+        // console.log("Q3 Boundary: ", q3_boundary);
+        // console.log("Q4 Boundary: ", q4_boundary);
+
+        // Major Vertex Length = Distance from Q1 to Q2 boundaries / 2
+        m_major_vertex = Vector.distance(q2_boundary, q1_boundary) / 2;
+
+        // Minor Vertex Length = Distance from Q1 to Q4 boundaries / 2
+        m_minor_vertex = Vector.distance(q4_boundary, q1_boundary) / 2;
+
+        console.log("Major Vertex Length: ", m_major_vertex);
+        console.log("Minor Vertex Length: ", m_minor_vertex);
+
     }
     
     var creation_second_handle_cursor_click = function(cursor_obj) {
         if (cursor_obj.is_pressed()) return; // release event only
-        // initial function
-        console.log('moving to final step...')
-        m_vertex = cursor_obj.location();
-        m_set_co_vertex = true;
-        console.log("Vertex Location: ", m_vertex);
-        console.log("Origin Location: ", m_origin);
-        var A = m_vertex;
-        var B = m_origin;
-        var C = { x: m_vertex.x, y: m_origin.y };
-        console.log("Point of reference for angle calculations: ", C);
-        var check_angle = find_angle(A,B,C);
-        console.log("What's our calculated angle of rotation? ", check_angle);
+
         self.handle_cursor_move = function(cursor_obj) {
-            m_co_vertex = cursor_obj.location();
-            // x1 = x0 + a * cos(t) -> (x1 - x0)/cos(t) = a 
-            // y1 = y0 + b * sin(t) -> (y1 - y0)/sin(t) = b
-            // x2 = x0 + a * cos(u)
-            // y2 = y0 + b * sin(u)
-            // x1 - x2 = a * cos(t) - a * cos(u)
-            // x1 - x2 = a * ( cos(t) - cos(u) )
-            // y1 - y2 = b * ( sin(t) - sin(u) )
-            //var u = Vector.angle_between({ x: 1, y: 0 }, m_first_point);
-            //var t = Vector.angle_between({ x: 1, y: 0 }, cur_loc      );
-            // var num = cur_loc.x**2*m_first_point.y**2 - cur_loc.y**2*m_first_point.x**2;
-            // m_co_vertex.x = Math.sqrt(Math.abs(num / (cur_loc.x**2 - m_first_point.x**2)));
-            // m_co_vertex.y = Math.sqrt(Math.abs(num / (cur_loc.y**2 - m_first_point.y**2)));
-            //m_vertex.y = (cur_loc.x - m_first_point.x) / (Math.cos(t) - Math.cos(u));
-            //m_vertex.x = (cur_loc.y - m_first_point.y) / (Math.sin(t) - Math.sin(u));
-            if (Math.random() > 0.95) {
-                //console.log("angle values fp: "+u+" cur_pos: "+t);
-                //console.log("m_co_vertex values : (x: "+m_co_vertex.x+", y: "+m_co_vertex.y+")");
-            }
+            var A = cursor_obj.location();
+            var B = m_origin;
+            var C = relative_zero;
+            console.log("Point of reference for angle calculations: ", C);
+            var angle_of_rotation = find_angle(A,B,C);
+            console.log("What's our calculated angle of rotation? ", angle_of_rotation);
+
         }
         self.handle_cursor_click = function(cursor_obj) {
             if (!cursor_obj.is_pressed()) {
                 m_finished_creating = true;
                 console.log("Second click registered! We done :D");
-                m_co_vertex = cursor_obj.location();
+                //m_co_vertex = cursor_obj.location();
                 self.handle_cursor_click = self.handle_cursor_move = function(_) {}
             }
         }
@@ -132,9 +147,14 @@ function Ellipse() {
         }
         console.log("cursor move event function changed");
         self.handle_cursor_move = function(cursor_obj) {
-            m_vertex = cursor_obj.location();
+            q1_boundary = cursor_obj.location();
+            x_axis = {x: q1_boundary.x, y: m_origin.y};
+            self.set_boundaries();
             if(!cursor_obj.is_pressed()){
+                q1_boundary = cursor_obj.location();
                 console.log("Mouse released. STOP DRAWING.");
+                relative_zero = cursor_obj.location();
+                m_boundaries_set = true;
                 return;
             }
         }
@@ -146,83 +166,45 @@ function Ellipse() {
     
     this.draw = function(context) {
         // save state
-        /*context.save();
+        context.save();
 
         console.log("Drawing ellipse...");
 
-        // scale context horizontally
-        context.translate(m_origin.x, m_origin.y);
-        context.scale    (m_vertex.x   , m_vertex.y   );
-        
-        // draw circle which will be stretched into a proper Ellipse
         context.beginPath();
-        context.arc(0, 0, 1, 0, 2*Math.PI, false);
-        
-        // restore to original state
-        context.restore();
+        // context.moveTo(m_origin.x, m_origin.y);
+        // context.lineTo(q1_boundary.x, q1_boundary.y);
 
-        // apply styling
-        context.fillStyle = 'black';
-        context.fill();
-        context.lineWidth = 3;
-        context.strokeStyle = 'black';
-        context.stroke();*/
+        // // draw horizontal axis
+        // context.moveTo(m_origin.x, m_origin.y);
+        // context.lineTo(q2_boundary.x, q2_boundary.y);
 
-        context.beginPath();
-        context.moveTo(m_origin.x, m_origin.y);
-        context.lineTo(m_vertex.x, m_vertex.y);
+        // context.moveTo(m_origin.x, m_origin.y);
+        // context.lineTo(q3_boundary.x, q3_boundary.y);
 
-        // draw horizontal axis
-        context.moveTo(m_origin.x, m_origin.y);
-        context.lineTo(m_vertex.x, m_origin.y);
+        // context.moveTo(m_origin.x, m_origin.y);
+        // context.lineTo(q4_boundary.x, q4_boundary.y);
+
+        //context.moveTo(q4_boundary.x, q4_boundary.y);        
+        //context.lineTo(q1_boundary.x, q1_boundary.y);
+
         context.lineWidth = 3;
         context.strokeStyle = 'red';
+
+        // Method 1: Draw Ellipse based on Bezier Curves
+        //context.moveTo(q3_boundary.x, q3_boundary.y + (q1_boundary.y - q3_boundary.y) / 2);
+        //context.bezierCurveTo(q3_boundary.x, q3_boundary.y, q1_boundary.x, q3_boundary.y, q1_boundary.x, q3_boundary.y + (q1_boundary.y - q3_boundary.y) / 2);
+        //context.bezierCurveTo(q1_boundary.x, q1_boundary.y, q3_boundary.x, q1_boundary.y, q3_boundary.x, q3_boundary.y + (q1_boundary.y - q3_boundary.y) / 2);
+
+
+        // Method 2: Draw Ellipse based on CanvasRenderingContext2D.ellipse()
+        context.ellipse(m_origin.x, m_origin.y, m_major_vertex, m_minor_vertex, angle_of_rotation, 0, 2*Math.PI);
         context.stroke();
         context.closePath();
 
-        if(m_set_co_vertex){
-            //context.save();
-
-            /*var width = Vector.distance(m_origin, m_co_vertex);
-            var height = Vector.distance(m_origin, m_vertex);
-            context.beginPath();
-            context.moveTo(m_origin.x, m_origin.y - height / 2);
-
-            context.bezierCurveTo(
-                m_origin.x + width / 2, m_origin.y - height / 2,
-                m_origin.x + width / 2, m_origin.y + height / 2,
-                m_origin.x, m_origin.y + height / 2
-            );
-            context.bezierCurveTo(
-                m_origin.x - width / 2, m_origin.y + height / 2,
-                m_origin.x - width / 2, m_origin.y - height / 2,
-                m_origin.x, m_origin.y - height / 2
-            );
-
-            context.restore();*/
-
-            // Attempt 2
-            /*var major_radius = Vector.distance(m_origin, m_co_vertex);
-            var minor_radius = Vector.distance(m_origin, m_vertex);
-            //var rotation_angle = find_angle()
-            context.ellipse(m_origin.x, m_origin.y, major_radius, minor_radius, 0, 0, 2*Math.PI);
-
-            context.fillStyle = 'black';
-            context.fill();*/
-            context.beginPath();
-            context.moveTo(m_origin.x, m_origin.y);
-            context.lineTo(m_co_vertex.x, m_co_vertex.y);
-            context.lineWidth = 5;
-            context.strokeStyle = 'black';
-            context.stroke();
-            context.closePath();
+        if(m_boundaries_set){
+            context.rotate(angle_of_rotation);
         }
 
-        else{
-            context.beginPath();
-
-            context.closePath();
-        }
     }
 
     this.expose = function() {
@@ -234,3 +216,10 @@ function Ellipse() {
         this.enable_editing();*/
     }
 }
+
+/***********************************************
+
+    Running list of bugs
+        1) Double clicking
+
+***********************************************/
