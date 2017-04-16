@@ -189,8 +189,8 @@ function Ellipse() {
         //context.moveTo(q4_boundary.x, q4_boundary.y);        
         //context.lineTo(q1_boundary.x, q1_boundary.y);
 
-        context.lineWidth = 3;
-        context.strokeStyle = 'red';
+        context.lineWidth = 5;
+        context.strokeStyle = 'black';
 
         // Method 1: Draw Ellipse based on Bezier Curves
         //context.moveTo(q3_boundary.x, q3_boundary.y + (q1_boundary.y - q3_boundary.y) / 2);
