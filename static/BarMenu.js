@@ -114,7 +114,6 @@ function BarMenu() {
 
         // Iterate through each entry or menu option
         m_entries.forEach(function(entry) { 
-            console.log("Count: " + count + "with x_pos: " + draw_position.x + " and y_pos : " + draw_position.y);
 
             count = count + 1;
 
