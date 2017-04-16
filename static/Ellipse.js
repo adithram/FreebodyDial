@@ -221,7 +221,7 @@ function Ellipse() {
 /***********************************************
 
     Running list of bugs
-        1) Double clicking?
+        1) Double clicking
         2) Control Points not implemented. Perhaps that's how we can rotate the ellipse?
 
 ***********************************************/
