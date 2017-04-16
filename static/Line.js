@@ -20,7 +20,7 @@
  ******************************************************************************/
 
 "use strict";
-// Basic line constants - for clarity. 
+// Basic line constants - for clarity.
 var LineConstants = {
     POINT_A_STRING : 'a',
     POINT_B_STRING : 'b',
@@ -34,7 +34,7 @@ Object.freeze(LineConstants);
  */
  // Control points refer to the points that are used when editing or moving.
  // Point will exist for changes in length, direction, or position.
- // Placed along ends and a midpoint. 
+ // Placed along ends and a midpoint.
 function LineControlPoints(point_a, point_b) {
     assert_new.check(this);
 
@@ -45,52 +45,52 @@ function LineControlPoints(point_a, point_b) {
     var m_move_point_b = undefined;
     var m_move_whole_line = undefined;
     var m_update_control_point_func = undefined;
-    
-    //Establish a default size 
+
+    //Establish a default size
     // potentially dead code
     /*function point_size() { return 10.0; }
-    
+
 
     function bounds_around(point) {
         return Vector.bounds_around(point, { x: point_size(), y: point_size() });
     }
-    
+
     // Use of basic distance formula to handle length adjustments or direction changes.
     function avg_vect(u, v) {
         return { x: (u.x + v.x)/2, y: (u.y + v.y)/2 };
     }
-    
+
     // Draws the bounds of the point
     function draw_point_bounds(context, cp_bounds, fill_color) {
         draw_bounds_as_black_outlined_box(context, cp_bounds, fill_color);
     }
-    
+
     // If point a is moved, perform these changes
     var update_point_a = function(cursor_pos) {
         m_move_point_a = bounds_around(cursor_pos);
         m_move_whole_line = bounds_around(avg_vect(cursor_pos, m_move_point_b));
         return { a: cursor_pos };
     };
-    
+
     // If the other point is moved, perform these changes
     var update_point_b = function(cursor_pos) {
         m_move_point_b = bounds_around(cursor_pos);
         m_move_whole_line = bounds_around(avg_vect(m_move_point_a, cursor_pos));
         return { b: cursor_pos };
     };
-    
+
     // When both points require movement - i.e. translating the line
     var update_both_points = function(cursor_pos) {
-        // Function used to establish midpoint. Midpoint used for translating the line when editing. 
+        // Function used to establish midpoint. Midpoint used for translating the line when editing.
         var center_of = function(bounds) {
             // Uses basic  division.
             return { x: bounds.x + bounds.width/2, y: bounds.y + bounds.height/2 };
         };
-        // Variables containing the center positions which will be needed when moving. 
+        // Variables containing the center positions which will be needed when moving.
         var cent = center_of(m_move_whole_line);
         var to_a = Vector.sub(center_of(m_move_point_a), cent);
         var to_b = Vector.sub(center_of(m_move_point_b), cent);
-        
+
         // Moves line and reestablish line.
         m_move_whole_line = bounds_around(cursor_pos);
         var resp = { a: Vector.add(cursor_pos, to_a),
@@ -99,8 +99,8 @@ function LineControlPoints(point_a, point_b) {
         m_move_point_b = bounds_around(resp.b);
         return resp;
     };*/
-    
-    // "Draws" the control points. Endpoints are yellow. Midpoint is blue. 
+
+    // "Draws" the control points. Endpoints are yellow. Midpoint is blue.
     this.draw = function(context) {
         draw_point_bounds(context, m_move_point_a   , 'yellow');
         draw_point_bounds(context, m_move_point_b   , 'yellow');
@@ -118,8 +118,8 @@ function LineControlPoints(point_a, point_b) {
         if (m_update_control_point_func === undefined) return {};
         return m_update_control_point_func(cursor_pos);
     }
-    
-    // Handles clicks when control points are used. 
+
+    // Handles clicks when control points are used.
     this.handle_cursor_click = function(cursor_pos, pressed) {
         if (!pressed) {
             m_update_control_point_func = undefined;
@@ -139,15 +139,15 @@ function LineControlPoints(point_a, point_b) {
         }
         return '';
     }
-    
-    // Updates status when user is updating the first point. 
+
+    // Updates status when user is updating the first point.
     this.is_editing_point_a = function()
         { return m_update_control_point_func === update_point_a; }
-    
-    // Updates the status when user is updating the second point. 
+
+    // Updates the status when user is updating the second point.
     this.is_editing_point_b = function()
         { return m_update_control_point_func === update_point_b; }
-    
+
     // Handles bounding.
     this.set_points = function(point_a, point_b) {
         m_move_point_a = bounds_around(point_a);
@@ -214,7 +214,7 @@ function LineControlPoints(point_a, point_b) {
  *  @note client code should not concern itself with what is "point a" and what
  *        is "point b".
  */
- // Most basic primitive. 
+ // Most basic primitive.
 function Line() {
     assert_new.check(this);
 
@@ -222,7 +222,7 @@ function Line() {
                               Line (Private Members)
                               (One line or undefined)
     **************************************************************************/
-    // Persistent variables relating to the lines. 
+    // Persistent variables relating to the lines.
     var m_point_a = zero_vect();
     var m_point_b = zero_vect();
     var m_control_points = undefined;
@@ -233,7 +233,7 @@ function Line() {
                               Line Editing (Private)
     **************************************************************************/
 
-    // Only needed when editing. 
+    // Only needed when editing.
     var handle_cursor_move_editing = function(cursor_obj) {
         var cursor_pos = cursor_obj.location();
         var gv = m_control_points.handle_cursor_move(cursor_pos);
@@ -277,15 +277,15 @@ function Line() {
     **************************************************************************/
 
     // Handles change in mode when user clicks "edit"
-    this.enable_editing = function() { 
+    this.enable_editing = function() {
         this.highlight();
         m_handle_cursor_move_func  = handle_cursor_move_editing ;
         m_handle_cursor_click_func = handle_cursor_click_editing;
     }
-    
+
     // Handles change in mode when user clicks any other mode other than "edit"
-    this.disable_editing = function() { 
-        m_control_points = undefined; 
+    this.disable_editing = function() {
+        m_control_points = undefined;
         m_handle_cursor_move_func  = function(c) {};
         m_handle_cursor_click_func = function(c, p) { return ''; };
     }
@@ -359,14 +359,14 @@ function Line() {
      */
     // :WARNING: I AM going to change how this works!
     this.snap_to_guideline = function(guide_line, rads) {
-        // values used to calculate angle. 
-        var diff = { x: m_point_a.x - m_point_b.x, 
+        // values used to calculate angle.
+        var diff = { x: m_point_a.x - m_point_b.x,
                      y: m_point_a.y - m_point_b.y };
         var error_con = 0.005;
         var ang_bet = Vector.angle_between(diff, guide_line);
         var scalar = 0;
-        
-        // Calculate angle of change to allow for "iterative" snapping 
+
+        // Calculate angle of change to allow for "iterative" snapping
         var angle_diff = Math.abs(rads - ang_bet);
         if (angle_diff > error_con && angle_diff < rads)
             scalar = 1;
@@ -405,8 +405,8 @@ function Line() {
 
         return true;
     }
-    
-    // Previous functions established two points, 
+
+    // Previous functions established two points,
     // this actually connects them creating a drawing of a line
     this.draw = function(context) {
         context.beginPath();
@@ -419,9 +419,10 @@ function Line() {
         if (m_control_points !== undefined)
             m_control_points.draw(context);
     }
-    
+
+
     // adds bounds
-    this.bounds = function() { 
+    this.bounds = function() {
         var x_ = Math.min(m_point_a.x, m_point_b.x);
         var y_ = Math.min(m_point_a.y, m_point_b.y);
         return { x: x_, y: y_,
@@ -430,11 +431,18 @@ function Line() {
     }
 
     /** Exposes the line's internals as a Momento.
-     *  @param func {function} a function which excepts
+     *  @param func {function} a function which excepts one argument. This
+     *         argument is the 'momento'.
+     *         The expected structure is that of a type and set of points, from
+     *         which the original object can be created. It takes the following
+     *         form:
+     *         { type: 'Shape', points: [center, special_point_from_which_others_are_derived] }
+     *         func is expected to return a momento, otherwise the shape will
+     *         remain unchanged.
      */
 
-     // Handles encoding. 
-    // Currently used for grouping. 
+     // Handles encoding.
+    // Currently used for grouping.
     // Will be used for loading and exporting diagrams as well.
     this.expose = function(func) {
         var gv = func({ type: "Line", points: [m_point_a, m_point_b] });
@@ -446,3 +454,7 @@ function Line() {
             m_control_points.set_points(gv.a, gv.b);
     }
 } // end of Line
+
+
+
+

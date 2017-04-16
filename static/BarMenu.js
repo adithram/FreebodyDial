@@ -42,11 +42,15 @@ function BarMenu() {
     var handle_click_inside = function(entry) {
         // Asserts that the current click is different than the previous click. 
         // A change has occured
-        if (m_previous_press !== entry) {
-            if (m_previous_press !== undefined)
-                m_previous_press.on_mode_exit(entry, m_previous_press);
-            entry.callback(entry);
-        }
+        // if (m_previous_press !== entry) {
+        //     if (m_previous_press !== undefined)
+        //         m_previous_press.on_mode_exit(entry, m_previous_press);
+        //     entry.callback(entry);
+        // }
+
+        if (m_previous_press !== undefined)
+            m_previous_press.on_mode_exit(entry, m_previous_press);
+        entry.callback(entry);
         // Reset the previous press
         m_previous_press = entry;
     }
@@ -89,24 +93,49 @@ function BarMenu() {
 
 
         var draw_position = deepcopy(m_location);
+
+        var initial_x = 0;
+
         // Find window width and height - used for dynamic resizing
         var window_width = $(window).width();
         var window_height = $(window).height();
         
         m_size = zero_vect();
         // Modify the font size based on window size - used for dynamic resizing
-        context.font = (window_height / 24)+"px Arial";
+        context.font = (window_height / 36)+"px Arial";
         context.lineWidth = 1;
         context.strokeStyle = 'black';
-        
+
+        var num_entries = m_entries.length;
+        var cuttoff_point = num_entries/2;
+        var count = 0;
+
+        var second_row_y = -1;
+
         // Iterate through each entry or menu option
         m_entries.forEach(function(entry) { 
+            console.log("Count: " + count + "with x_pos: " + draw_position.x + " and y_pos : " + draw_position.y);
+
+            count = count + 1;
+
+            if(count == cuttoff_point + 1){
+                //draw_position.y = entry_size.y;
+                draw_position.x = initial_x;
+                draw_position.y = second_row_y
+                m_size = zero_vect();
+
+            }
+
             //Declare static size for each entry. Size changes depending on window size. 
-            var entry_size = { x: window_width / m_entries.length,
+            var entry_size = { x: (window_width / m_entries.length)*2,
                                y: parseInt(context.font) + window_height / 12 };
             // update entry bounds
             entry.bounds = { x    : draw_position.x, y     : draw_position.y,
                              width: entry_size.x   , height: entry_size.y    };
+
+            if(entry_size.y){
+                second_row_y = entry_size.y;
+            }
             
             // draw box around entry
             context.beginPath();
@@ -125,13 +154,49 @@ function BarMenu() {
             // Variables containing witdth of text, width of box, and the position of the beginning of the text
             // Position indicates a centered position
             var text_width = context.measureText(entry.text).width;
-            var box_width = window_width / m_entries.length;
+            var box_width = window_width /(m_entries.length/2);
             var position =  (box_width - text_width) / 2;
+
+            var getTextHeight = function(font) {
+
+              var text = $('<span>Hg</span>').css({ fontFamily: font });
+              var block = $('<div style="display: inline-block; width: 1px; height: 0px;"></div>');
+
+              var div = $('<div></div>');
+              div.append(text, block);
+
+              var body = $('body');
+              body.append(div);
+
+              try {
+
+                var result = {};
+
+                block.css({ verticalAlign: 'baseline' });
+                result.ascent = block.offset().top - text.offset().top;
+
+                block.css({ verticalAlign: 'bottom' });
+                result.height = block.offset().top - text.offset().top;
+
+                result.descent = result.height - result.ascent;
+
+              } finally {
+                div.remove();
+              }
+
+              return result;
+            };
+
+            var text_height = getTextHeight(context.font).height;
+            var box_height = entry_size.y;
+            var y_position = ( ((box_height - text_height)/2) + (box_height - text_height) )/2;
             
             // Fill box with text at the right position
             context.fillText(entry.text, 
                              draw_position.x + position, 
-                             draw_position.y + entry_size.y / 2);
+                             draw_position.y + y_position);
+
+            
 
             // Move to handle the next entry
             m_size.x += entry_size.x;
