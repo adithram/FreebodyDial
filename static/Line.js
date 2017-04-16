@@ -46,60 +46,6 @@ function LineControlPoints(point_a, point_b) {
     var m_move_whole_line = undefined;
     var m_update_control_point_func = undefined;
 
-    //Establish a default size
-    // potentially dead code
-    /*function point_size() { return 10.0; }
-
-
-    function bounds_around(point) {
-        return Vector.bounds_around(point, { x: point_size(), y: point_size() });
-    }
-
-    // Use of basic distance formula to handle length adjustments or direction changes.
-    function avg_vect(u, v) {
-        return { x: (u.x + v.x)/2, y: (u.y + v.y)/2 };
-    }
-
-    // Draws the bounds of the point
-    function draw_point_bounds(context, cp_bounds, fill_color) {
-        draw_bounds_as_black_outlined_box(context, cp_bounds, fill_color);
-    }
-
-    // If point a is moved, perform these changes
-    var update_point_a = function(cursor_pos) {
-        m_move_point_a = bounds_around(cursor_pos);
-        m_move_whole_line = bounds_around(avg_vect(cursor_pos, m_move_point_b));
-        return { a: cursor_pos };
-    };
-
-    // If the other point is moved, perform these changes
-    var update_point_b = function(cursor_pos) {
-        m_move_point_b = bounds_around(cursor_pos);
-        m_move_whole_line = bounds_around(avg_vect(m_move_point_a, cursor_pos));
-        return { b: cursor_pos };
-    };
-
-    // When both points require movement - i.e. translating the line
-    var update_both_points = function(cursor_pos) {
-        // Function used to establish midpoint. Midpoint used for translating the line when editing.
-        var center_of = function(bounds) {
-            // Uses basic  division.
-            return { x: bounds.x + bounds.width/2, y: bounds.y + bounds.height/2 };
-        };
-        // Variables containing the center positions which will be needed when moving.
-        var cent = center_of(m_move_whole_line);
-        var to_a = Vector.sub(center_of(m_move_point_a), cent);
-        var to_b = Vector.sub(center_of(m_move_point_b), cent);
-
-        // Moves line and reestablish line.
-        m_move_whole_line = bounds_around(cursor_pos);
-        var resp = { a: Vector.add(cursor_pos, to_a),
-                     b: Vector.add(cursor_pos, to_b) };
-        m_move_point_a = bounds_around(resp.a);
-        m_move_point_b = bounds_around(resp.b);
-        return resp;
-    };*/
-
     // "Draws" the control points. Endpoints are yellow. Midpoint is blue.
     this.draw = function(context) {
         draw_point_bounds(context, m_move_point_a   , 'yellow');
@@ -156,10 +102,9 @@ function LineControlPoints(point_a, point_b) {
     }
     this.set_points(point_a, point_b);
 
-    function point_size() { return 10.0; }
-
     function bounds_around(point) {
-        return Vector.bounds_around(point, { x: point_size(), y: point_size() });
+        var pt_size = Configuration.get_point_size();
+        return Vector.bounds_around(point, { x: pt_size, y: pt_size });
     }
 
     function avg_vect(u, v) {
@@ -347,8 +292,6 @@ function Line() {
         return (dist <= distance_limit);
     }
 
-    //this.finished_creating = function() { return true; }
-
     /** While the Line is being pulled (as part of its creation) or edited;
      *  snap_to_guideline will add a snapping effect allowing for more
      *  consistent diagrams.
@@ -413,7 +356,7 @@ function Line() {
         //context.strokeStyle = '#007';
         context.moveTo(m_point_a.x, m_point_a.y);
         context.lineTo(m_point_b.x, m_point_b.y);
-        context.lineWidth = 5;
+        context.lineWidth = Configuration.get_line_thickness();
         context.stroke();
 
         if (m_control_points !== undefined)
@@ -430,6 +373,10 @@ function Line() {
     }
 
     /** Exposes the line's internals as a Momento.
+     *  @note
+     *  Handles encoding.
+     *  Currently used for grouping.
+     *  Will be used for loading and exporting diagrams as well.
      *  @param func {function} a function which excepts one argument. This
      *         argument is the 'momento'.
      *         The expected structure is that of a type and set of points, from
@@ -439,10 +386,6 @@ function Line() {
      *         func is expected to return a momento, otherwise the shape will
      *         remain unchanged.
      */
-
-     // Handles encoding.
-    // Currently used for grouping.
-    // Will be used for loading and exporting diagrams as well.
     this.expose = function(func) {
         var gv = func({ type: "Line", points: [m_point_a, m_point_b] });
         if (gv === undefined) return;
@@ -453,7 +396,3 @@ function Line() {
             m_control_points.set_points(gv.a, gv.b);
     }
 } // end of Line
-
-
-
-

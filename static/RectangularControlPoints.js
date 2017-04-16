@@ -45,11 +45,11 @@ function RectangularControlPoints(top_left, bottom_right) {
         pts[k.BOTTOM_LEFT ] = { x: top_left.x, y: bottom_right.y };
     })();
 
-    function point_size() { return 10.0; }
-
     function bounds_around(point) {
-        return Vector.bounds_around(point, { x: point_size(), y: point_size() });
+        var pt_size = Configuration.get_point_size();
+        return Vector.bounds_around(point, { x: pt_size, y: pt_size });
     }
+
     function draw_bounds(context, cp_bounds, fill_color) {
         draw_bounds_as_black_outlined_box(context, cp_bounds, fill_color);
     }

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 
-<title>The Freebody Dial</title>
+<title>Dia / Dia - The Freebody Diagram + Dial Tool</title>
 
 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
 <link rel="icon" href="favicon.ico" type="image/x-icon">
@@ -56,8 +56,9 @@ var g_app;
 function reset_canvas_size() {
     $("#main-canvas").attr("width" , $(window).width ().toString());
     $("#main-canvas").attr("height", $(window).height().toString());
+    Configuration.update_screen_size();
 }
-$(window).on('resize', function(){
+$(window).on('resize', function() {
     reset_canvas_size();
 });
 $(document).ready(function() {

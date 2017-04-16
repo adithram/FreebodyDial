@@ -1,9 +1,9 @@
 /*******************************************************************************
- * 
+ *
  *  Copyright 2017
  *  Authors: Andrew Janke, Dennis Chang, Lious Boehm, Adithya Ramanathan
- *  Released under the GPLv3 
- * 
+ *  Released under the GPLv3
+ *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
@@ -16,12 +16,12 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  ******************************************************************************/
 
 "use strict";
 
-// on reflection: We perhaps should've used a geometry library as opposed to 
+// on reflection: We perhaps should've used a geometry library as opposed to
 //                reinventing the wheel, and wasting time
 //                DrawIO's API does what canvas does...
 
@@ -35,7 +35,7 @@ var assert_new = {
 
 Object.freeze(assert_new);
 
-// Utility functions used for internal usage. 
+// Utility functions used for internal usage.
 
 function assert_not_nan(f) { if (f != f) throw "Nan!"; }
 
@@ -81,7 +81,7 @@ function array_trim_first(arr, condition) {
 // Vector.in_bounds = ...
 // ...
 
-// Vectors used by lines and polygons. 
+// Vectors used by lines and polygons.
 var Vector = {
     mag : function(v) {
         return Math.sqrt(v.x*v.x + v.y*v.y);
@@ -107,9 +107,9 @@ var Vector = {
                v.y > bounds.y && v.y < bounds.y + bounds.height;
     },
     bounds_around : function(point, size_vect) {
-        return { x: point.x - size_vect.x/2, 
+        return { x: point.x - size_vect.x/2,
                  y: point.y - size_vect.y/2,
-                 width : size_vect.x, 
+                 width : size_vect.x,
                  height: size_vect.y };
     },
     distance : function(u, v) { return this.mag(this.sub(u, v)); }
@@ -119,11 +119,62 @@ Object.freeze(Vector);
 
 var g_this = this;
 
-// Default vector. <0,0>
+// Singleton Object
+var Configuration = Object.freeze(new (function () {
+    assert_new.check(this);
+    this.DIAGRAM_TYPES = Object.freeze({
+        'Line'    : { create : function () { return new Line   (); } },
+        'Group'   : { create : function () { return new Group  (); } },
+        'Polygon' : { create : function () { return new Polygon(); } },
+        'Ellipse' : { create : function () { return new Ellipse(); } }
+    });
+    this.get_point_size = function() { return 10; }
+    this.get_line_thickness = function() { return 5; }
+    this.update_screen_size = function () {}
+    this.assert_diagram_functions_defined = function() { // "concept checking"
+        // must meet a "common interface"
+        // concern: this interface is becoming too bulky?
+        // primitives are handling their own events?!
+        function find_missing_function(obj) {
+            var required_functions = [
+                "highlight", "unhighlight",
+                // geometry
+                "point_within", "bounds",
+                "explode",
+                "draw",
+                // events -> for editing
+                "handle_cursor_move", "handle_cursor_click",
+                // edit mode specific
+                "enable_editing", "disable_editing",
+                // momento save/restore
+                "expose"];
+            var rv = "";
+            required_functions.forEach(function(str) {
+                if (obj[str] === undefined) {
+                    rv = str;
+                    return true;
+                }
+            });
+            return rv;
+        }
+        for (var obj_name in this.DIAGRAM_TYPES) {
+            var gv = find_missing_function(create_object_by_name(obj_name));
+            if (gv !== "") {
+                throw obj_name + " does not have a required " +
+                      "function defined: \"" + gv + "\".";
+            }
+        }
+    }
+})());
+
+function create_object_by_name(name)
+    { return Configuration.DIAGRAM_TYPES[name].create(); }
+
+// Default vector. <0, 0>
 function zero_vect() { return { x: 0, y: 0 }; }
 
 //deepcopy function used by nav bar
-function deepcopy(obj) { 
+function deepcopy(obj) {
     if ($.isArray(obj)) {
         return $.extend(true, [], obj);
     } else {
@@ -131,7 +182,7 @@ function deepcopy(obj) {
     }
 }
 
-//Bounding function. 
+// "short hand" way of drawing a small box on the canvas
 function draw_bounds_as_black_outlined_box(context, cp_bounds, fill_color) {
     context.beginPath();
     context.rect(cp_bounds.x, cp_bounds.y, cp_bounds.width, cp_bounds.height);

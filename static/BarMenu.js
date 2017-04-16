@@ -1,9 +1,9 @@
 /*******************************************************************************
- * 
+ *
  *  Copyright 2017
  *  Authors: Andrew Janke, Dennis Chang, Lious Boehm, Adithya Ramanathan
- *  Released under the GPLv3 
- * 
+ *  Released under the GPLv3
+ *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
@@ -16,19 +16,20 @@
  *
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  ******************************************************************************/
 
 "use strict";
 
 /** Represents a 'quick and dirty' menu. For prototyping purposes. Hopefully
  *  we can use HTML to create a more professional interface.
- * 
+ *
  *  Which didn't seem to have happened :c
+ *  Looks like it's here to stay. ;-;
  */
 function BarMenu() {
     assert_new.check(this);
-    
+
     // Contains the various menu options
     var m_entries = [];
     // Used to see whether change in click as occured
@@ -37,10 +38,10 @@ function BarMenu() {
     var m_location = zero_vect();
     var m_size     = zero_vect();
     var self = this;
-    
+
     // Function that handles clicks within the menu bar
     var handle_click_inside = function(entry) {
-        // Asserts that the current click is different than the previous click. 
+        // Asserts that the current click is different than the previous click.
         // A change has occured
         if (m_previous_press !== entry) {
             if (m_previous_press !== undefined)
@@ -50,14 +51,14 @@ function BarMenu() {
         // Reset the previous press
         m_previous_press = entry;
     }
-    
+
     // Function used to add operations to menu bar with respective functionality.
     this.push_entry = function(text_, callback_) {
         m_entries.push({ text: text_, callback: callback_,
                          on_mode_exit: function(_){} });
         return self;
     }
-    
+
     this.set_last_added_entry_as_default = function() {
         if (m_previous_press !== undefined) {
             throw "Already set default menu entry!";
@@ -65,7 +66,7 @@ function BarMenu() {
         array_last(m_entries).callback(array_last(m_entries));
         m_previous_press = array_last(m_entries);
     }
-    
+
     // Function that checks the cursor position within the menu bar for a single entry
     this.check_click = function(cursor) {
         if (m_entries.length === 0) return false;
@@ -80,7 +81,7 @@ function BarMenu() {
         });
         return rv;
     }
-    
+
     // I wish I could do this with regular HTML elements, it would be soooo
     // much easier and allow fancier graphics
     // this function DOES modify the state of the object
@@ -92,22 +93,22 @@ function BarMenu() {
         // Find window width and height - used for dynamic resizing
         var window_width = $(window).width();
         var window_height = $(window).height();
-        
+        // we're already adjusting for changing screen resolutions
         m_size = zero_vect();
         // Modify the font size based on window size - used for dynamic resizing
         context.font = (window_height / 36)+"px Arial";
         context.lineWidth = 1;
         context.strokeStyle = 'black';
-        
+
         // Iterate through each entry or menu option
-        m_entries.forEach(function(entry) { 
-            //Declare static size for each entry. Size changes depending on window size. 
+        m_entries.forEach(function(entry) {
+            //Declare static size for each entry. Size changes depending on window size.
             var entry_size = { x: window_width / m_entries.length,
                                y: parseInt(context.font) + window_height / 12 };
             // update entry bounds
             entry.bounds = { x    : draw_position.x, y     : draw_position.y,
                              width: entry_size.x   , height: entry_size.y    };
-            
+
             // draw box around entry
             context.beginPath();
             if (m_previous_press === entry) {
@@ -118,19 +119,19 @@ function BarMenu() {
             context.fillRect(draw_position.x, draw_position.y, entry_size.x, entry_size.y);
             context.rect(draw_position.x, draw_position.y, entry_size.x, entry_size.y);
             context.stroke();
-            
+
             // entry text
             context.fillStyle = 'black';
-            
+
             // Variables containing witdth of text, width of box, and the position of the beginning of the text
             // Position indicates a centered position
             var text_width = context.measureText(entry.text).width;
             var box_width = window_width / m_entries.length;
             var position =  (box_width - text_width) / 2;
-            
+
             // Fill box with text at the right position
-            context.fillText(entry.text, 
-                             draw_position.x + position, 
+            context.fillText(entry.text,
+                             draw_position.x + position,
                              draw_position.y + entry_size.y / 2);
 
             // Move to handle the next entry
@@ -138,4 +139,34 @@ function BarMenu() {
             draw_position.x += entry_size.x;
         });
     }
-}
+};
+
+(function () {
+    var k = Object.freeze({ /* constants go here */ });
+    var model = {}; // keep js interpreter from stopping
+    var g_menu = {
+        'Draw' : [(function () {
+            var rv = {};
+            for (var name in Configuration.DIAGRAM_TYPES) {
+                if (name === 'Group') continue; // exception
+                rv[name] = function () { model.switch_to_drawing(name); };
+            }
+            return rv;
+        })(), 'draw-icon.png'], // wordpress standard I think
+        'Edit' : function () {
+            // do usual model stuff
+        },
+        'Grouping' : [{
+            'Start Grouping' : function () {
+                // model stuff
+            }
+        }, 'grouping.png'],
+        'File' : {
+            'Import' : function () {},
+            'Export' : function () {},
+            'Screen Shot' : function () {}
+        },
+        'Print' : function () {},
+        'How To' : function () {}
+    };
+});

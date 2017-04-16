@@ -33,10 +33,16 @@ function Group(sub_items) {
 
     var self = this;
 
-    (function(items) {
+    var update_bounds = function() {
+        if (m_sub_items === undefined) {
+            m_sub_items = [];
+            m_top_left = m_bottom_right = { x: 0, y: 0 };
+            return;
+        }
+        // initializer code, contains variables that I don't want
         var top_left_most     = { x:  Infinity, y:  Infinity };
         var bottom_right_most = { x: -Infinity, y: -Infinity };
-        items.forEach(function(item) {
+        m_sub_items.forEach(function(item) {
             var bounds_ = item.bounds();
             top_left_most.x = Math.min(top_left_most.x, bounds_.x);
             top_left_most.y = Math.min(top_left_most.y, bounds_.y);
@@ -47,7 +53,8 @@ function Group(sub_items) {
         });
         m_top_left     = top_left_most;
         m_bottom_right = bottom_right_most;
-    })(sub_items);
+    }
+    update_bounds();
 
     /***************************************************************************
      *                         Control point events
@@ -214,19 +221,23 @@ function Group(sub_items) {
 
     // Expose serializes object for use with other objects.
     this.expose = function(func) {
-        var gv = { type : "Group", items : [] };
+        var saved_objs = { type : "Group", items : [] };
         m_sub_items.forEach(function(item) {
             item.expose(function(as_data) {
-                gv.items.push(as_data);
+                saved_objs.items.push(as_data);
             });
         });
-        var gv_ = func(gv);
-        if (gv_ !== undefined)
-            gv = gv_;
-        m_sub_items.forEach(function(_, index) {
-            m_sub_items[index].expose(function(_) {
-                return gv.items[index];
+        var gv = func(saved_objs);
+        if (gv === undefined) return;
+        if (gv.type !== 'Group')
+            throw '"type" field must be "Group"';
+        gv.items.forEach(function(item) {
+            var new_sub_item = create_object_by_name(item['type']);
+            new_sub_item.expose(function() {
+                return item;
             });
+            m_sub_items.push(new_sub_item);
         });
+        update_bounds();
     }
-}
+} // end Group function (object)
