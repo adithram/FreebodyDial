@@ -301,7 +301,7 @@ function Model(cursor) {
         change_to_draw_mode(function() { return new Ellipse() });
     });
 
-    
+
     // Function that handles undoing the last object creation.
     // Needs to be expanded to handle undoing all actions, not just drawing related ones. 
     m_bar_menu.push_entry("Undo", function(){
@@ -647,12 +647,12 @@ m_bar_menu.push_entry("Print", function(){
         tCtx = tempCanvas.getContext("2d");
        
         tCtx.canvas.width = window_width;
-        tCtx.canvas.height = window_height - window_height/7;
+        tCtx.canvas.height = window_height - window_height/3.5;
         var x_start = 0;
-        var y_start_org = window_height/7;
+        var y_start_org = window_height/3.5;
         var y_start_copy = 0;
         var width = window_width ;
-        var height = window_height - window_height/7;
+        var height = window_height - window_height/3.5;
       
         // Create and download image. 
         tCtx.drawImage(canvasElement, 
