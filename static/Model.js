@@ -300,6 +300,17 @@ function Model(cursor) {
     m_bar_menu.push_entry("Ellipse", function () {
         change_to_draw_mode(function() { return new Ellipse() });
     });
+
+    
+    // Function that handles undoing the last object creation.
+    // Needs to be expanded to handle undoing all actions, not just drawing related ones. 
+    m_bar_menu.push_entry("Undo", function(){
+        console.log("Undo!");
+        // Remove the latest line added to m_lines
+        m_last_undone_object = array_last(m_diagram_objects);
+        m_diagram_objects.pop();
+    });
+
     
     // Grouping behavior. 
     var finish_grouping = function() {
@@ -412,15 +423,6 @@ function Model(cursor) {
         });
     });
     
-    // Function that handles undoing the last object creation.
-    // Needs to be expanded to handle undoing all actions, not just drawing related ones. 
-    m_bar_menu.push_entry("Undo", function(){
-        console.log("Undo!");
-        // Remove the latest line added to m_lines
-        m_last_undone_object = array_last(m_diagram_objects);
-        m_diagram_objects.pop();
-    });
-
     // Function that handles export of object
     m_bar_menu.push_entry("Export", function(){
         console.log("Export!");
