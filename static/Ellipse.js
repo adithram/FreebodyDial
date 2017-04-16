@@ -171,10 +171,12 @@ function Ellipse() {
         console.log("Drawing ellipse...");
 
         context.beginPath();
+
+        // Below, use to draw reference points to the 4 boundary points
+        // NOTE: Can be used for m_control_points??
         // context.moveTo(m_origin.x, m_origin.y);
         // context.lineTo(q1_boundary.x, q1_boundary.y);
 
-        // // draw horizontal axis
         // context.moveTo(m_origin.x, m_origin.y);
         // context.lineTo(q2_boundary.x, q2_boundary.y);
 
@@ -197,13 +199,12 @@ function Ellipse() {
 
 
         // Method 2: Draw Ellipse based on CanvasRenderingContext2D.ellipse()
+        context.rotate(angle_of_rotation);
+
         context.ellipse(m_origin.x, m_origin.y, m_major_vertex, m_minor_vertex, angle_of_rotation, 0, 2*Math.PI);
         context.stroke();
         context.closePath();
-
-        if(m_boundaries_set){
-            context.rotate(angle_of_rotation);
-        }
+        context.restore();
 
     }
 
@@ -221,5 +222,6 @@ function Ellipse() {
 
     Running list of bugs
         1) Double clicking
+        2) Control Points not implemented. Perhaps that's how we can rotate the ellipse?
 
 ***********************************************/
