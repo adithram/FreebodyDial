@@ -34,6 +34,33 @@
 
 ********************************************************************************************************/
 
+// Function handles the translation of the polygon. Considered "dragging"
+function Draggable() {
+    assert_new.check(this);
+    
+    // Default value is fase
+    var m_is_being_dragged = false;
+    
+    //Check that cursor is in a position indicating the users intent to translate
+    var within_point = function(parent_point, cursor_point) {
+        return Vector.mag(Vector.sub(parent_point, cursor_point)) < 10.0;
+    }
+    
+    // Update value depending on user behvaior
+    this.is_being_dragged = function() { return m_is_being_dragged; }
+    
+    // Handles the click atthe correct position and updates status accordingly. 
+    this.handle_draggable_cursor_click = function(cursor_obj, this_location) {
+        if (within_point(this_location, cursor_obj.location()) 
+            && cursor_obj.is_pressed()) 
+        {
+            m_is_being_dragged = true;
+        } else if (!cursor_obj.is_pressed() && m_is_being_dragged) {
+            m_is_being_dragged = false;
+        }
+    }
+}
+
 // Control points for the Ellipse. Similar to the line control points. 
 // Specifically used for translation.
 function EllipseTranslationControlPoint() {
@@ -390,4 +417,5 @@ function Ellipse() {
     Running list of bugs
         1) Double clicking
         2) Control Points not implemented. Perhaps that's how we can rotate the ellipse?
+
 ***********************************************/
