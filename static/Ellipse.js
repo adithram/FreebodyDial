@@ -160,8 +160,6 @@ function find_angle(A,B,C) {
     return Math.acos((BC*BC+AB*AB-AC*AC)/(2*BC*AB));
 }
 
-
-
 function Ellipse() {
     assert_new.check(this);
     var q1_boundary = zero_vect();
@@ -178,6 +176,7 @@ function Ellipse() {
     var relative_zero = zero_vect();
     var m_boundaries_set = false;
     var m_finished_creating = false;
+    var m_editing = false;
     var self = this;
     
     // Default values. 
@@ -327,8 +326,15 @@ function Ellipse() {
         context.strokeStyle = 'black';
 
         // Draw Ellipse based on CanvasRenderingContext2D.ellipse()
-
         context.ellipse(m_origin.x, m_origin.y, m_major_vertex, m_minor_vertex, 0, 0, 2*Math.PI);
+
+        if(m_editing){
+            console.log("Edit time. Draw dem rectangles.");
+            m_control_points.forEach(function(control_point) {
+                control_point.draw(context);
+            });
+        }
+
         context.stroke();
         context.closePath();
         context.restore();
@@ -370,13 +376,6 @@ function Ellipse() {
         });
     }
 
-    // Allows for line visiibility while editing. 
-    var draw_while_editing_or_viewing = function(context) {
-        m_control_points.forEach(function(control_point) {
-            control_point.draw(context);
-        });
-    };
-
     this.highlight = function() {
         console.log("Looking at highlight...");
         m_points.forEach(function(point, index, array) {
@@ -395,7 +394,7 @@ function Ellipse() {
         console.log("Ellipse Edit Mode enabled!");
         self.highlight();
         m_control_points.push(new EllipseTranslationControlPoint());
-        self.draw = draw_while_editing_or_viewing;
+        m_editing = true;
         array_last(m_control_points).set_location(m_origin);
         self.handle_cursor_click = handle_cursor_click_editing;
         self.handle_cursor_move = handle_cursor_move_editing;
@@ -403,6 +402,7 @@ function Ellipse() {
     // Function that indicates a change away from edit mode to any other mode. 
     this.disable_editing = function() {
         console.log("Ellipse Edit Mode DISABLED.");
+        m_editing = false;
         m_control_points = [];
         self.handle_cursor_move = self.handle_cursor_click = function(_){};
     }
