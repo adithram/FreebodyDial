@@ -30,9 +30,9 @@
         3) User releases mouse to set size of the rectangular boundary
         4) User moves mouse to determine ellipse's angle of rotation
         5) User clicks mouse to anchor ellipse in place
-
 ********************************************************************************************************/
 
+<<<<<<< HEAD
 // Function handles the translation of the ellipse. Considered "dragging"
 function Draggable() {
     assert_new.check(this);
@@ -161,6 +161,8 @@ function EllipseEndControlPoint() {
 EllipseEndControlPoint.prototype = Object.create(Draggable.prototype);
 EllipseEndControlPoint.prototype.constructor = EllipseEndControlPoint;
 
+=======
+>>>>>>> origin/master
 // from http://stackoverflow.com/questions/17763392/how-to-calculate-in-javascript-angle-between-3-points
 function find_angle(A,B,C) {
     var AB = Math.sqrt(Math.pow(B.x-A.x,2)+ Math.pow(B.y-A.y,2));    
@@ -176,12 +178,12 @@ function Ellipse() {
     var q3_boundary = zero_vect();
     var q4_boundary = zero_vect();
     var x_axis = zero_vect();
+    var m_vertex = zero_vect();
     var m_origin = zero_vect();
     var m_major_vertex = 0;
     var m_minor_vertex = 0;
     var m_bounds = [];
     var relative_zero = zero_vect();
-    var m_control_points = [];
     var m_boundaries_set = false;
     var m_finished_creating = false;
     var self = this;
@@ -189,6 +191,13 @@ function Ellipse() {
     // Default values. 
     this.set_location = function(x_, y_) { origin = { x: x_, y: y_ }; }
     this.finished_creating = function() { return m_finished_creating; }
+
+    // unused functions?
+    this.highlight = function() {}
+    this.unhighlight = function() {}
+    this.enable_editing  = function() {}
+    this.disable_editing = function() {}
+    this.point_within = function() {}
 
     this.explode = function() { return this; } 
     this.bounds = function() {
@@ -206,7 +215,6 @@ function Ellipse() {
     // EFFECTS: returns the 4 points of the rectangular boundary surrounding the ellipse
     this.set_boundaries = function() { 
 
-        console.log("Calculating boundaries now...");
         //NOTE: q2_boundary's x value can be calculated by subtracting 2 of the x_axis_x lengths from q1_boundary.x
         //      q2_boundary's y value is the same as q1_boundary.y
         var q2_x = q1_boundary.x - 2*(x_axis.x - m_origin.x);
@@ -233,11 +241,11 @@ function Ellipse() {
         // Major Vertex Length = Distance from Q1 to Q2 boundaries / 2
         m_major_vertex = Vector.distance(q2_boundary, q1_boundary) / 2;
 
-        // Minor Vertex Length = Distance from Q1 to Q4 boundaries / 2-
+        // Minor Vertex Length = Distance from Q1 to Q4 boundaries / 2
         m_minor_vertex = Vector.distance(q4_boundary, q1_boundary) / 2;
 
-        //console.log("Major Vertex Length: ", m_major_vertex);
-        //console.log("Minor Vertex Length: ", m_minor_vertex);
+        console.log("Major Vertex Length: ", m_major_vertex);
+        console.log("Minor Vertex Length: ", m_minor_vertex);
 
     }
     
@@ -278,14 +286,10 @@ function Ellipse() {
                 console.log("Mouse released. STOP DRAWING.");
                 relative_zero = cursor_obj.location();
                 m_boundaries_set = true;
-                //self.handle_cursor_move = function() {}
                 return;
             }
         }
         
-        //self.handle_cursor_click = function() {}
-        //return;
-        //self.handle_cursor_move = function() {}
         self.handle_cursor_click = creation_second_handle_cursor_click;
     }
     
@@ -294,9 +298,10 @@ function Ellipse() {
     this.draw = function(context) {
         // save state
         context.save();
-        context.beginPath();
 
         //console.log("Drawing ellipse...");
+
+        context.beginPath();
 
         // Below, use to draw reference points to the 4 boundary points
         // NOTE: Can be used for m_control_points??
@@ -325,15 +330,16 @@ function Ellipse() {
 
 
         // Method 2: Draw Ellipse based on CanvasRenderingContext2D.ellipse()
-        //context.rotate(angle_of_rotation);
+        context.rotate(angle_of_rotation);
 
-        context.ellipse(m_origin.x, m_origin.y, m_major_vertex, m_minor_vertex, 0, 0, 2*Math.PI);
+        context.ellipse(m_origin.x, m_origin.y, m_major_vertex, m_minor_vertex, angle_of_rotation, 0, 2*Math.PI);
         context.stroke();
         context.closePath();
         context.restore();
 
     }
 
+<<<<<<< HEAD
     // Function that indicates a change to edit mode.
     this.enable_editing = function() {
         self.highlight();
@@ -366,21 +372,20 @@ function Ellipse() {
     }
 
     this.expose = function() {
+=======
+    this.expose = function(func) {
+>>>>>>> origin/master
         var gv = func({ type : "Ellipse", points : m_origin, m_vertex });
         if (gv === undefined) return;
         m_origin = gv.points[0];
         m_vertex = gv.points[1];
         this.disable_editing();
         this.enable_editing();
-    }
-
+      }
 }
 
-
 /***********************************************
-
     Running list of bugs
         1) Double clicking
         2) Control Points not implemented. Perhaps that's how we can rotate the ellipse?
-
 ***********************************************/
