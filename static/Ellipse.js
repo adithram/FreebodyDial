@@ -30,136 +30,7 @@
         3) User releases mouse to set size of the rectangular boundary
         4) User moves mouse to determine ellipse's angle of rotation
         5) User clicks mouse to anchor ellipse in place
-
 ********************************************************************************************************/
-
-// Function handles the translation of the ellipse. Considered "dragging"
-function Draggable() {
-    assert_new.check(this);
-    
-    // Default value is false
-    var m_is_being_dragged = false;
-    
-    //Check that cursor is in a position indicating the users intent to translate
-    var within_point = function(parent_point, cursor_point) {
-        return Vector.mag(Vector.sub(parent_point, cursor_point)) < 10.0;
-    }
-    
-    // Update value depending on user behvaior
-    this.is_being_dragged = function() { return m_is_being_dragged; 
-    
-    // Handles the click atthe correct position and updates status accordingly. 
-    this.handle_draggable_cursor_click = function(cursor_obj, this_location) {
-        if (within_point(this_location, cursor_obj.location()) 
-            && cursor_obj.is_pressed()) 
-        {
-            m_is_being_dragged = true;
-        } else if (!cursor_obj.is_pressed() && m_is_being_dragged) {
-            m_is_being_dragged = false;
-        }
-    }
-}
-}
-
-// Control points for the Ellipse. Similar to the line control points. 
-// Specifically used for translation.
-function EllipseTranslationControlPoint() {
-    assert_new.check(this);
-    Draggable.call(this);
-    
-    var m_location = undefined;
-    var m_old_location = undefined;
-    var self = this;
-    
-    this.set_location = function(array_of_points) {
-        var v = { x: 0, y: 0 };
-        var count = 0;
-        array_of_points.forEach(function(point) {
-            v.x += point.x;
-            v.y += point.y;
-            ++count;
-        });
-        v.x /= count;
-        v.y /= count;
-        m_old_location = m_location = v;
-    }
-    
-    // Translates basic cursor click to a cursor click as it relates to dragging 
-    this.handle_cursor_click = function(cursor_obj) {
-        self.handle_draggable_cursor_click(cursor_obj, m_location);
-    }
-    
-    // Handles cursor movement in the scheme of editing. 
-    // Curosr movement relates to dragging NOT resizing or reshaping. 
-    this.handle_cursor_move = function(cursor_obj, ellipse_points) {
-        if (!self.is_being_dragged()) return;
-        if (m_old_location === undefined)
-            throw "set_location must be called before move events are handled";
-        var displacement = Vector.sub(m_location, m_old_location);
-        m_old_location = m_location;
-        m_location = cursor_obj.location();
-        ellipse_points.forEach(function(_, index, array) {
-            array[index] = Vector.add(array[index], displacement);
-        });
-    }
-    
-    // Draw middle control point. Point is blue. 
-    this.draw = function(context) {
-        draw_bounds_as_black_outlined_box
-            (context, Vector.bounds_around(m_location, { x: 10, y : 10 }), 'blue');
-    }
-}
-
-EllipseTranslationControlPoint.prototype = Object.create(Draggable.prototype);
-EllipseTranslationControlPoint.prototype.constructor = EllipseTranslationControlPoint;
-
-//Polygon control points specifically used for resizing or reshaping. 
-function EllipseEndControlPoint() {
-    assert_new.check(this);
-    Draggable.call(this);
-    
-    // revealing the parent array seems to much to me
-    // this dragging behavior may get a little clunky as a result
-    
-    var m_parent_point = undefined;
-    var m_parent_index = undefined;
-    var self = this;
-    
-    // Handles cursor click which indicates the users intent ot resize or reshape
-    self.handle_cursor_click = function(cursor_obj) {
-        self.handle_draggable_cursor_click(cursor_obj, m_parent_point);
-    }
-    
-    // Handles the cursor movement once a click has occured 
-    // Handles the actual resizing or reshaping
-    self.handle_cursor_move = function(cursor_obj, ellipse_points) {
-        if (self.is_being_dragged()) {
-            m_parent_point = cursor_obj.location();
-            ellipse_points[m_parent_index] = m_parent_point;
-        } else if (cursor_obj.is_pressed()) {
-            m_parent_point = ellipse_points[m_parent_index];
-        }
-    }
-    
-    // Update the parent point.
-    self.set_parent_point = function(point, index) {
-        m_parent_point = point;
-        m_parent_index = index;
-    }
-    
-    // Understand location after changes have occured. 
-    self.location = function() { return m_parent_point; }
-    
-    // Draw end control points. Points are yellow. 
-    self.draw = function(context) {
-        if (m_parent_point === undefined) return;
-        draw_bounds_as_black_outlined_box
-            (context, Vector.bounds_around(m_parent_point, { x: 10, y: 10 }), 'yellow');
-    }
-}
-
-EllipseEndControlPoint.prototype = Object.create(Draggable.prototype);
-EllipseEndControlPoint.prototype.constructor = EllipseEndControlPoint;
 
 // from http://stackoverflow.com/questions/17763392/how-to-calculate-in-javascript-angle-between-3-points
 function find_angle(A,B,C) {
@@ -181,7 +52,6 @@ function Ellipse() {
     var m_minor_vertex = 0;
     var angle_of_rotation = 0;
     var relative_zero = zero_vect();
-    var m_control_points = [];
     var m_boundaries_set = false;
     var m_finished_creating = false;
     var self = this;
@@ -189,6 +59,13 @@ function Ellipse() {
     // Default values. 
     this.set_location = function(x_, y_) { origin = { x: x_, y: y_ }; }
     this.finished_creating = function() { return m_finished_creating; }
+
+    // unused functions?
+    this.highlight = function() {}
+    this.unhighlight = function() {}
+    this.enable_editing  = function() {}
+    this.disable_editing = function() {}
+    this.point_within = function() {}
 
     this.explode = function() { return this; } 
     this.bounds = function() {
@@ -206,7 +83,6 @@ function Ellipse() {
     // EFFECTS: returns the 4 points of the rectangular boundary surrounding the ellipse
     this.set_boundaries = function() { 
 
-        console.log("Calculating boundaries now...");
         //NOTE: q2_boundary's x value can be calculated by subtracting 2 of the x_axis_x lengths from q1_boundary.x
         //      q2_boundary's y value is the same as q1_boundary.y
         var q2_x = q1_boundary.x - 2*(x_axis.x - m_origin.x);
@@ -233,11 +109,11 @@ function Ellipse() {
         // Major Vertex Length = Distance from Q1 to Q2 boundaries / 2
         m_major_vertex = Vector.distance(q2_boundary, q1_boundary) / 2;
 
-        // Minor Vertex Length = Distance from Q1 to Q4 boundaries / 2-
+        // Minor Vertex Length = Distance from Q1 to Q4 boundaries / 2
         m_minor_vertex = Vector.distance(q4_boundary, q1_boundary) / 2;
 
-        //console.log("Major Vertex Length: ", m_major_vertex);
-        //console.log("Minor Vertex Length: ", m_minor_vertex);
+        console.log("Major Vertex Length: ", m_major_vertex);
+        console.log("Minor Vertex Length: ", m_minor_vertex);
 
     }
     
@@ -278,14 +154,10 @@ function Ellipse() {
                 console.log("Mouse released. STOP DRAWING.");
                 relative_zero = cursor_obj.location();
                 m_boundaries_set = true;
-                //self.handle_cursor_move = function() {}
                 return;
             }
         }
         
-        //self.handle_cursor_click = function() {}
-        //return;
-        //self.handle_cursor_move = function() {}
         self.handle_cursor_click = creation_second_handle_cursor_click;
     }
     
@@ -294,9 +166,10 @@ function Ellipse() {
     this.draw = function(context) {
         // save state
         context.save();
-        context.beginPath();
 
         console.log("Drawing ellipse...");
+
+        context.beginPath();
 
         // Below, use to draw reference points to the 4 boundary points
         // NOTE: Can be used for m_control_points??
@@ -325,62 +198,27 @@ function Ellipse() {
 
 
         // Method 2: Draw Ellipse based on CanvasRenderingContext2D.ellipse()
-        //context.rotate(angle_of_rotation);
+        context.rotate(angle_of_rotation);
 
-        context.ellipse(m_origin.x, m_origin.y, m_major_vertex, m_minor_vertex, 0, 0, 2*Math.PI);
+        context.ellipse(m_origin.x, m_origin.y, m_major_vertex, m_minor_vertex, angle_of_rotation, 0, 2*Math.PI);
         context.stroke();
         context.closePath();
         context.restore();
 
     }
 
-    // Function that indicates a change to edit mode.
-    this.enable_editing = function() {
-        self.highlight();
-        m_control_points.push(new PolygonTranslationControlPoint());
-        array_last(m_control_points).set_location(m_points);
-        self.handle_cursor_click = handle_cursor_click_editing;
-        self.handle_cursor_move = handle_cursor_move_editing;
-    }
-    // Function that indicates a change away from edit mode to any other mode. 
-    this.disable_editing = function() {
-        m_control_points = [];
-        self.handle_cursor_move = self.handle_cursor_click = function(_){};
-    }
-
-    this.bounds = function() { return m_bounds; }
-    
-    this.point_within = function(cursor_loc, size) {
-        return Vector.in_bounds(cursor_loc, self.bounds());
-    }
-    
-    this.highlight = function() {
-        m_points.forEach(function(point, index, array) {
-            m_control_points.push(new PolygonEndControlPoint());
-            // effectively sets a reference
-            array_last(m_control_points).set_parent_point(array[index], index);
-        });
-    }
-    this.unhighlight = function() {
-        m_control_points = [];
-    }
-
     this.expose = function() {
-        var gv = func({ type : "Ellipse", points : m_origin, m_vertex });
+        /*var gv = func({ type : "Ellipse", points : m_origin, m_vertex });
         if (gv === undefined) return;
         m_origin = gv.points[0];
         m_vertex = gv.points[1];
         this.disable_editing();
-        this.enable_editing();
+        this.enable_editing();*/
     }
-
 }
 
-
 /***********************************************
-
     Running list of bugs
         1) Double clicking
         2) Control Points not implemented. Perhaps that's how we can rotate the ellipse?
-
 ***********************************************/
