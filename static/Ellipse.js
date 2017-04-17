@@ -366,12 +366,12 @@ function Ellipse() {
     }
 
     this.expose = function() {
-        /*var gv = func({ type : "Ellipse", points : m_origin, m_vertex });
+        var gv = func({ type : "Ellipse", points : m_origin, m_vertex });
         if (gv === undefined) return;
         m_origin = gv.points[0];
         m_vertex = gv.points[1];
         this.disable_editing();
-        this.enable_editing();*/
+        this.enable_editing();
     }
 
 }
