@@ -89,6 +89,14 @@ function BarMenu() {
 
 
         var draw_position = deepcopy(m_location);
+        var org = draw_position;
+        var num_buttons = m_entries.length
+        var top = Math.floor(num_buttons/2);
+        var bottom = Math.ceil(num_buttons/2);
+        var level = top;
+
+        var i = 0;
+
         // Find window width and height - used for dynamic resizing
         var window_width = $(window).width();
         var window_height = $(window).height();
@@ -102,10 +110,10 @@ function BarMenu() {
         // Iterate through each entry or menu option
         m_entries.forEach(function(entry) { 
             //Declare static size for each entry. Size changes depending on window size. 
-            var entry_size = { x: window_width / m_entries.length,
+            var entry_size = { x: window_width / level,
                                y: parseInt(context.font) + window_height / 12 };
             // update entry bounds
-            entry.bounds = { x    : draw_position.x, y     : draw_position.y,
+            entry.bounds = { x    : draw_position.x, y     : draw_position.y + 10,
                              width: entry_size.x   , height: entry_size.y    };
             
             // draw box around entry
@@ -136,6 +144,20 @@ function BarMenu() {
             // Move to handle the next entry
             m_size.x += entry_size.x;
             draw_position.x += entry_size.x;
+
+            if (i === top - 1){
+
+                m_size.x = deepcopy(m_location);
+                draw_position.x = deepcopy(m_location);
+                m_size.y +=  window_height / 12;
+                draw_position.y+= window_height / 12;
+            }
+
+            console.log(i)
+
+            console.log(draw_position.y)
+
+            i++;
         });
     }
 }
