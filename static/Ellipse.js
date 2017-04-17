@@ -32,7 +32,6 @@
         5) User clicks mouse to anchor ellipse in place
 ********************************************************************************************************/
 
-<<<<<<< HEAD
 // Function handles the translation of the ellipse. Considered "dragging"
 function Draggable() {
     assert_new.check(this);
@@ -161,8 +160,6 @@ function EllipseEndControlPoint() {
 EllipseEndControlPoint.prototype = Object.create(Draggable.prototype);
 EllipseEndControlPoint.prototype.constructor = EllipseEndControlPoint;
 
-=======
->>>>>>> origin/master
 // from http://stackoverflow.com/questions/17763392/how-to-calculate-in-javascript-angle-between-3-points
 function find_angle(A,B,C) {
     var AB = Math.sqrt(Math.pow(B.x-A.x,2)+ Math.pow(B.y-A.y,2));    
@@ -330,16 +327,14 @@ function Ellipse() {
 
 
         // Method 2: Draw Ellipse based on CanvasRenderingContext2D.ellipse()
-        context.rotate(angle_of_rotation);
 
-        context.ellipse(m_origin.x, m_origin.y, m_major_vertex, m_minor_vertex, angle_of_rotation, 0, 2*Math.PI);
+        context.ellipse(m_origin.x, m_origin.y, m_major_vertex, m_minor_vertex, 0, 0, 2*Math.PI);
         context.stroke();
         context.closePath();
         context.restore();
 
     }
 
-<<<<<<< HEAD
     // Function that indicates a change to edit mode.
     this.enable_editing = function() {
         self.highlight();
@@ -371,17 +366,14 @@ function Ellipse() {
         m_control_points = [];
     }
 
-    this.expose = function() {
-=======
     this.expose = function(func) {
->>>>>>> origin/master
         var gv = func({ type : "Ellipse", points : m_origin, m_vertex });
         if (gv === undefined) return;
         m_origin = gv.points[0];
         m_vertex = gv.points[1];
         this.disable_editing();
         this.enable_editing();
-      }
+    }
 }
 
 /***********************************************
