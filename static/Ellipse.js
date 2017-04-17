@@ -47,6 +47,7 @@ function Ellipse() {
     var q3_boundary = zero_vect();
     var q4_boundary = zero_vect();
     var x_axis = zero_vect();
+    var m_vertex = zero_vect();
     var m_origin = zero_vect();
     var m_major_vertex = 0;
     var m_minor_vertex = 0;
@@ -207,14 +208,14 @@ function Ellipse() {
 
     }
 
-    this.expose = function() {
-        /*var gv = func({ type : "Ellipse", points : m_origin, m_vertex });
+    this.expose = function(func) {
+        var gv = func({ type : "Ellipse", points : m_origin, m_vertex });
         if (gv === undefined) return;
         m_origin = gv.points[0];
         m_vertex = gv.points[1];
         this.disable_editing();
-        this.enable_editing();*/
-    }
+        this.enable_editing();
+      }
 }
 
 /***********************************************
