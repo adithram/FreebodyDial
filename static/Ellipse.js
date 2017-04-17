@@ -28,8 +28,10 @@
             - User will drag the mouse to 1 of the 4 corners of the rectangular boundary (Quadrant 1 boundary)
                 and set_boundaries() will calculate the location of the other 3 corners
         3) User releases mouse to set size of the rectangular boundary
-        4) User moves mouse to determine ellipse's angle of rotation
-        5) User clicks mouse to anchor ellipse in place
+        4) User clicks mouse to anchor ellipse in place
+    
+    NOTE: Ellipse can be rotated using the control points in Edit Mode
+    
 ********************************************************************************************************/
 
 // from http://stackoverflow.com/questions/17763392/how-to-calculate-in-javascript-angle-between-3-points
@@ -51,7 +53,6 @@ function Ellipse() {
     var m_origin = zero_vect();
     var m_major_vertex = 0;
     var m_minor_vertex = 0;
-    var angle_of_rotation = 0;
     var relative_zero = zero_vect();
     var m_boundaries_set = false;
     var m_finished_creating = false;
@@ -192,16 +193,9 @@ function Ellipse() {
         context.lineWidth = 5;
         context.strokeStyle = 'black';
 
-        // Method 1: Draw Ellipse based on Bezier Curves
-        //context.moveTo(q3_boundary.x, q3_boundary.y + (q1_boundary.y - q3_boundary.y) / 2);
-        //context.bezierCurveTo(q3_boundary.x, q3_boundary.y, q1_boundary.x, q3_boundary.y, q1_boundary.x, q3_boundary.y + (q1_boundary.y - q3_boundary.y) / 2);
-        //context.bezierCurveTo(q1_boundary.x, q1_boundary.y, q3_boundary.x, q1_boundary.y, q3_boundary.x, q3_boundary.y + (q1_boundary.y - q3_boundary.y) / 2);
+        // Draw Ellipse based on CanvasRenderingContext2D.ellipse()
 
-
-        // Method 2: Draw Ellipse based on CanvasRenderingContext2D.ellipse()
-        context.rotate(angle_of_rotation);
-
-        context.ellipse(m_origin.x, m_origin.y, m_major_vertex, m_minor_vertex, angle_of_rotation, 0, 2*Math.PI);
+        context.ellipse(m_origin.x, m_origin.y, m_major_vertex, m_minor_vertex, 0, 0, 2*Math.PI);
         context.stroke();
         context.closePath();
         context.restore();
