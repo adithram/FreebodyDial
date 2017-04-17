@@ -417,9 +417,6 @@ function Model(cursor) {
             });
             assert_no_empties(m_diagram_objects);
 
-            m_diagram_objects.forEach(function(object) {
-                object.unhighlight();
-            });
         });
 
         cursor.set_location_change_event(function() {
@@ -428,7 +425,7 @@ function Model(cursor) {
 
         m_diagram_objects.forEach(function(object) {
                 object.unhighlight();
-            });
+        });
     });
     
     // Function that handles export of object
