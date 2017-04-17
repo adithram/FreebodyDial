@@ -32,6 +32,18 @@
     
     NOTE: Ellipse can be rotated using the control points in Edit Mode
 
+    In terms of EllipseTranslationControlPoint,
+        1) Redefine m_origin based on cursor_obj.location()
+        2) Recalculate q1-q4 boundaries
+
+    In terms of EllipseEndControlPoints,
+        1) Redefine q1-q4 boundaries based on cursor_obj.location()
+        2) 
+
+    NEW EllipseRotationControlPoint
+        1) Redefine ellipse's angle_of_rotation based on cursor_obj.location() and relative_zero
+        2) Redraw ellipse using angle_of_rotation
+
 ********************************************************************************************************/
 
 // Function handles the translation of the polygon. Considered "dragging"
