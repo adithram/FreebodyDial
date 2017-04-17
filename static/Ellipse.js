@@ -113,7 +113,7 @@ function EllipseTranslationControlPoint() {
 EllipseTranslationControlPoint.prototype = Object.create(Draggable.prototype);
 EllipseTranslationControlPoint.prototype.constructor = EllipseTranslationControlPoint;
 
-//Polygon control points specifically used for resizing or reshaping. 
+//Ellipse control points specifically used for resizing or reshaping. 
 function EllipseEndControlPoint() {
     assert_new.check(this);
     Draggable.call(this);
@@ -179,7 +179,7 @@ function Ellipse() {
     var m_origin = zero_vect();
     var m_major_vertex = 0;
     var m_minor_vertex = 0;
-    var angle_of_rotation = 0;
+    var m_bounds = [];
     var relative_zero = zero_vect();
     var m_control_points = [];
     var m_boundaries_set = false;
@@ -245,12 +245,12 @@ function Ellipse() {
         if (cursor_obj.is_pressed()) return; // release event only
 
         self.handle_cursor_move = function(cursor_obj) {
-            var A = cursor_obj.location();
+            /*var A = cursor_obj.location();
             var B = m_origin;
             var C = relative_zero;
             console.log("Point of reference for angle calculations: ", C);
             var angle_of_rotation = find_angle(A,B,C);
-            console.log("What's our calculated angle of rotation? ", angle_of_rotation);
+            console.log("What's our calculated angle of rotation? ", angle_of_rotation);*/
 
         }
         self.handle_cursor_click = function(cursor_obj) {
@@ -296,7 +296,7 @@ function Ellipse() {
         context.save();
         context.beginPath();
 
-        console.log("Drawing ellipse...");
+        //console.log("Drawing ellipse...");
 
         // Below, use to draw reference points to the 4 boundary points
         // NOTE: Can be used for m_control_points??
@@ -337,7 +337,7 @@ function Ellipse() {
     // Function that indicates a change to edit mode.
     this.enable_editing = function() {
         self.highlight();
-        m_control_points.push(new PolygonTranslationControlPoint());
+        m_control_points.push(new EllipseTranslationControlPoint());
         array_last(m_control_points).set_location(m_points);
         self.handle_cursor_click = handle_cursor_click_editing;
         self.handle_cursor_move = handle_cursor_move_editing;
@@ -356,7 +356,7 @@ function Ellipse() {
     
     this.highlight = function() {
         m_points.forEach(function(point, index, array) {
-            m_control_points.push(new PolygonEndControlPoint());
+            m_control_points.push(new EllipseEndControlPoint());
             // effectively sets a reference
             array_last(m_control_points).set_parent_point(array[index], index);
         });
