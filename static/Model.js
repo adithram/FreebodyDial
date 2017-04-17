@@ -501,7 +501,39 @@ function Model(cursor) {
                             var x_end = parseFloat(data[5]);
                             var y_end = parseFloat(data[7]);
 
-                            alert(x_start + " " + y_start + " " + x_end + " " + y_end);
+                            //alert(x_start + " " + y_start + " " + x_end + " " + y_end);
+
+                            var c = document.getElementById("main-canvas");
+                            var ctx = c.getContext("2d");
+
+                            var import_line = new Line( custom_vect(x_start, y_start), custom_vect(x_end, y_end), true);
+                            import_line.draw(ctx);
+                            m_diagram_objects.push(import_line)
+
+
+                            
+                            // ctx.beginPath();
+                            // ctx.moveTo(x_start, y_start);
+                            // ctx.lineTo(x_end, y_end);
+                            // ctx.stroke();
+
+                            alert("Done drawing")
+
+
+                            // // Previous functions established two points,
+                            // // this actually connects them creating a drawing of a line
+                            // this.draw = function(context) {
+                            //     context.beginPath();
+                            //     //context.strokeStyle = '#007';
+                            //     context.moveTo(m_point_a.x, m_point_a.y);
+                            //     context.lineTo(m_point_b.x, m_point_b.y);
+                            //     context.lineWidth = 5;
+                            //     context.stroke();
+
+                            //     if (m_control_points !== undefined)
+                            //         m_control_points.draw(context);
+                            // }
+
 
                             // Recreate object using information stored in data.
 

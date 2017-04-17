@@ -122,6 +122,8 @@ var g_this = this;
 // Default vector. <0,0>
 function zero_vect() { return { x: 0, y: 0 }; }
 
+function custom_vect(x_in, y_in) { return {x: x_in, y: y_in};}
+
 //deepcopy function used by nav bar
 function deepcopy(obj) { 
     if ($.isArray(obj)) {

@@ -223,6 +223,7 @@ function Line() {
                               (One line or undefined)
     **************************************************************************/
     // Persistent variables relating to the lines.
+    var import_mode = false;
     var m_point_a = zero_vect();
     var m_point_b = zero_vect();
     var m_control_points = undefined;
@@ -269,7 +270,10 @@ function Line() {
     };
     // Handles line movement as it relates to adjusting orientation and length of line
     m_handle_cursor_move_func = function(cursor_obj) {
-        m_point_b = cursor_obj.location();
+        if(!import_mode){
+            m_point_b = cursor_obj.location();
+        }
+        
     };
 
     /**************************************************************************
@@ -409,7 +413,9 @@ function Line() {
     // Previous functions established two points,
     // this actually connects them creating a drawing of a line
     this.draw = function(context) {
+        alert("in function");
         context.beginPath();
+        alert(m_point_a.x +" " + m_point_b.x);
         //context.strokeStyle = '#007';
         context.moveTo(m_point_a.x, m_point_a.y);
         context.lineTo(m_point_b.x, m_point_b.y);
@@ -455,6 +461,250 @@ function Line() {
     }
 } // end of Line
 
+function Line(p_a, p_b, import_mode_in){
+     assert_new.check(this);
+
+    /**************************************************************************
+                              Line (Private Members)
+                              (One line or undefined)
+    **************************************************************************/
+    // Persistent variables relating to the lines
+    var import_mode = import_mode_in;
+    var m_point_a = p_a;
+    var m_point_b = p_b;
+    var m_control_points = undefined;
+    var m_handle_cursor_move_func  = undefined;
+    var m_handle_cursor_click_func = undefined;
+
+    /**************************************************************************
+                              Line Editing (Private)
+    **************************************************************************/
+
+    // Only needed when editing.
+    var handle_cursor_move_editing = function(cursor_obj) {
+        var cursor_pos = cursor_obj.location();
+        var gv = m_control_points.handle_cursor_move(cursor_pos);
+        var rv = false;
+        if (gv.a !== undefined) {
+            m_point_a = gv.a;
+            rv = true;
+        }
+        if (gv.b !== undefined) {
+            m_point_b = gv.b;
+            rv = true;
+        }
+        return rv;
+    };
+
+    var handle_cursor_click_editing = function(cursor_obj) {
+        var cursor_pos = cursor_obj.location(), pressed = cursor_obj.is_pressed();
+        return m_control_points.handle_cursor_click(cursor_pos, pressed);
+    };
+
+    /**************************************************************************
+                           Line Initial Drawing (Private)
+                              Put in place on creation
+    **************************************************************************/
+    // Handles initial user click as it relates to line creation
+    m_handle_cursor_click_func = function(cursor_obj) {
+        if (cursor_obj.is_pressed()) {
+            m_point_b = m_point_a = cursor_obj.location();
+        } else {
+            m_handle_cursor_click_func = m_handle_cursor_move_func =
+                function(o){};
+        }
+    };
+    // Handles line movement as it relates to adjusting orientation and length of line
+    m_handle_cursor_move_func = function(cursor_obj) {
+        if(!import_mode){
+            m_point_b = cursor_obj.location();
+        }
+    };
+
+    /**************************************************************************
+                                  Line Editing
+    **************************************************************************/
+
+    // Handles change in mode when user clicks "edit"
+    this.enable_editing = function() {
+        this.highlight();
+        m_handle_cursor_move_func  = handle_cursor_move_editing ;
+        m_handle_cursor_click_func = handle_cursor_click_editing;
+    }
+
+    // Handles change in mode when user clicks any other mode other than "edit"
+    this.disable_editing = function() {
+        m_control_points = undefined;
+        m_handle_cursor_move_func  = function(c) {};
+        m_handle_cursor_click_func = function(c, p) { return ''; };
+    }
+
+    this.highlight = function() {
+        m_control_points = new LineControlPoints(m_point_a, m_point_b);
+    }
+
+    this.unhighlight = function() {
+        m_control_points = undefined;
+    }
+
+    /**************************************************************************
+                               Grouping Functions
+    **************************************************************************/
+
+    this.explode = function() { return this; }
+
+    /**************************************************************************
+                                 Cursor Events
+    **************************************************************************/
+
+    /** Called on state change
+     *  @return Returns a string characterizing the effect of the click event,
+     *          '' for no effect.
+     */
+    this.handle_cursor_click = function(cursor_pos, pressed) {
+        return m_handle_cursor_click_func(cursor_pos, pressed);
+    }
+
+    /** Called when there is no change to the is_clicked event
+     */
+    this.handle_cursor_move = function(cursor_pos, pressed) {
+        m_handle_cursor_move_func(cursor_pos);
+    }
+
+    /**************************************************************************
+                                 Other \_o.o_/
+    **************************************************************************/
+
+    this.point_within = function(point, distance_limit) {
+        // Geometry, derived from mathematics:
+        // https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
+        if (distance_limit === undefined)
+            throw "distance_limit must be defined";
+
+        var a = m_point_a;
+        var b = m_point_b;
+        var c = point;
+        var xs_diff_sq = (a.x - b.x)*(a.x - b.x);
+        var ys_diff_sq = (a.y - b.y)*(a.y - b.y);
+
+        // Prevent NaN
+        if (xs_diff_sq === 0 && ys_diff_sq === 0)
+            return Vector.distance(c, a) <= distance_limit;
+
+        var dist = Math.abs((b.y - a.y)*c.x - (b.x - a.x)*c.y + b.x*a.y - b.y*a.x)/
+                   Math.sqrt(xs_diff_sq + ys_diff_sq);
+        return (dist <= distance_limit);
+    }
+
+    //this.finished_creating = function() { return true; }
+
+    /** While the Line is being pulled (as part of its creation) or edited;
+     *  snap_to_guideline will add a snapping effect allowing for more
+     *  consistent diagrams.
+     *
+     *  @param guide_line {Vector} A unit vector, representing a line, which
+     *                             this line will snap to.
+     *  @param rads       {number} The snapping thershold in radians.
+     */
+    // :WARNING: I AM going to change how this works!
+    this.snap_to_guideline = function(guide_line, rads) {
+        // values used to calculate angle.
+        var diff = { x: m_point_a.x - m_point_b.x,
+                     y: m_point_a.y - m_point_b.y };
+        var error_con = 0.005;
+        var ang_bet = Vector.angle_between(diff, guide_line);
+        var scalar = 0;
+
+        // Calculate angle of change to allow for "iterative" snapping
+        var angle_diff = Math.abs(rads - ang_bet);
+        if (angle_diff > error_con && angle_diff < rads)
+            scalar = 1;
+
+        angle_diff = Math.abs(Math.PI - rads - ang_bet);
+        if (angle_diff > error_con && angle_diff < rads)
+            scalar = -1;
+
+        if (scalar === 0) {
+            return false;
+        }
+        // make the snap
+        var saved_mag = Vector.mag(diff);
+        var to_other_point = { x: saved_mag*scalar*guide_line.x,
+                               y: saved_mag*scalar*guide_line.y };
+
+        var comp_new_pt_b = function() {
+            return { x: -to_other_point.x + m_point_a.x,
+                     y: -to_other_point.y + m_point_a.y };
+        };
+
+        if (m_control_points === undefined) {
+            // snap which ever point is being pulled in this case point b
+            m_point_b = comp_new_pt_b();
+        } else {
+            if (m_control_points.is_editing_point_a()) {
+                m_point_a = { x: to_other_point.x + m_point_b.x,
+                              y: to_other_point.y + m_point_b.y };
+            } else if (m_control_points.is_editing_point_b()) {
+                m_point_b = comp_new_pt_b();
+            } else {
+                // both are being edited, therefore do no snapping
+            }
+            m_control_points.set_points(m_point_a, m_point_b);
+        }
+
+        return true;
+    }
+
+    // Previous functions established two points,
+    // this actually connects them creating a drawing of a line
+    this.draw = function(context) {
+        //alert("in function");
+        context.beginPath();
+        //alert(m_point_a.x +" " + m_point_b.x);
+        //context.strokeStyle = '#007';
+        context.moveTo(m_point_a.x, m_point_a.y);
+        context.lineTo(m_point_b.x, m_point_b.y);
+        context.lineWidth = 5;
+        context.stroke();
+
+        if (m_control_points !== undefined)
+            m_control_points.draw(context);
+    }
+
+
+    // adds bounds
+    this.bounds = function() {
+        var x_ = Math.min(m_point_a.x, m_point_b.x);
+        var y_ = Math.min(m_point_a.y, m_point_b.y);
+        return { x: x_, y: y_,
+                 width : Math.abs(m_point_a.x - m_point_b.x),
+                 height: Math.abs(m_point_a.y - m_point_b.y) };
+    }
+
+    /** Exposes the line's internals as a Momento.
+     *  @param func {function} a function which excepts one argument. This
+     *         argument is the 'momento'.
+     *         The expected structure is that of a type and set of points, from
+     *         which the original object can be created. It takes the following
+     *         form:
+     *         { type: 'Shape', points: [center, special_point_from_which_others_are_derived] }
+     *         func is expected to return a momento, otherwise the shape will
+     *         remain unchanged.
+     */
+
+     // Handles encoding.
+    // Currently used for grouping.
+    // Will be used for loading and exporting diagrams as well.
+    this.expose = function(func) {
+        var gv = func({ type: "Line", points: [m_point_a, m_point_b] });
+        if (gv === undefined) return;
+
+        m_point_a = gv.points[0];
+        m_point_b = gv.points[1];
+        if (m_control_points !== undefined)
+            m_control_points.set_points(gv.a, gv.b);
+    }
+}
 
 
 
