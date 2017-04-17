@@ -209,10 +209,13 @@ function Ellipse() {
     }
 
     this.expose = function(func) {
-        var gv = func({ type : "Ellipse", points : m_origin, m_vertex });
+        var gv = func({ type : "Ellipse", points : m_origin, q1_boundary, q2_boundary, q3_boundary, q4_boundary });
         if (gv === undefined) return;
         m_origin = gv.points[0];
-        m_vertex = gv.points[1];
+        q1_boundary = gv.points[1];
+        q2_boundary = gv.points[2];
+        q3_boundary = gv.points[3];
+        q4_boundary = gv.points[4];
         this.disable_editing();
         this.enable_editing();
       }
