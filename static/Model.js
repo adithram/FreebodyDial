@@ -416,11 +416,19 @@ function Model(cursor) {
                 m_diagram_objects.push(items);
             });
             assert_no_empties(m_diagram_objects);
+
+            m_diagram_objects.forEach(function(object) {
+                object.unhighlight();
+            });
         });
 
         cursor.set_location_change_event(function() {
             m_cursor_box = Vector.bounds_around(cursor.location(), cursor_box_size());
         });
+
+        m_diagram_objects.forEach(function(object) {
+                object.unhighlight();
+            });
     });
     
     // Function that handles export of object
@@ -518,30 +526,29 @@ function Model(cursor) {
                                 if(data[j] != "x" && data[j] != "y"){
                                     data[j] = data[j].replace(/[^0-9.]/g, '');
                                 }
+                                //alert("J: " + j + " data: " + data[j]);
                             }
 
                             //every grouping of four points represents a corner
                             // i.e. x, x_val, y, y_val
-                            var num_corners = data.length / 4;
 
-                            var last_j;
+                            var points = [];
 
-                            for (var j = 0; j < data.length - 4; j+=4){
+                            for (var j = 0; j < data.length; j+=4){
                                 var current_x = parseFloat(data[j+1]);
                                 var current_y = parseFloat(data[j+3]);
-                                var end_x = parseFloat(data[j+5]);
-                                var end_y = parseFloat(data[j+7]);
-                                alert("line: " + current_x + " " + current_y + " " + end_x + " " + end_y);
-                                last_j = j;
+                                
+                                points.push( custom_vect(current_x, current_y));
+
                             }
 
-                            //Link last point back to start
+                            // alert("last line: " + start_x + " " + start_y + " " + last_x + " " + last_y);
 
-                            var start_x = parseFloat(data[1]);
-                            var start_y = parseFloat(data[j+3]);
-                            var last_x = parseFloat(data[last_j + 5]);
-                            var last_y = parseFloat(data[last_j + 7]);
-                            alert("last line: " + start_x + " " + start_y + " " + last_x + " " + last_y);
+                            var c = document.getElementById("main-canvas");
+                            var ctx = c.getContext("2d");
+                            var import_polygon = new Polygon(points, true, points.length);
+                            import_polygon.draw(ctx);
+                            m_diagram_objects.push(import_polygon)
 
                        
 
@@ -552,8 +559,8 @@ function Model(cursor) {
                         }
                         // If it is a ellipse
                         else if(objects[i] == "Ellipse"){
-                            alert("in ellipse");
                             // Code needs to be added 
+
                         }
                         //else - bad situation
                         else{
@@ -681,6 +688,7 @@ m_bar_menu.push_entry("Print", function(){
 
     });
 
+    
 
 
 

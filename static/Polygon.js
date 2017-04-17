@@ -184,6 +184,7 @@ PolygonEndControlPoint.prototype.constructor = PolygonEndControlPoint;
 function Polygon() {
     assert_new.check(this);
     // Array for polygon points
+    var import_mode = false;
     var m_points = [];
     var m_bounds = undefined;
     var m_candidate_point = undefined;
@@ -262,7 +263,242 @@ function Polygon() {
     // Handles cursor movement which indicates the various other points
     var handle_cursor_move_creation = function(cursor_obj) {
         if (m_points.length > 0) {
-            m_candidate_point = cursor_obj.location();
+            if(!import_mode){
+                m_candidate_point = cursor_obj.location();
+            }
+        }
+    }
+    
+    // Function such that as new corner points are added, and as the cursor
+    // is moved, the object is drawed. 
+    var draw_while_creating = function(context) {
+        // initial draw function while the polygon object is being created
+        var save_restore = function(context, func) {
+            context.save();
+            func();
+            context.restore();
+        };
+        // The polygon is a bunch of lines connected through a point
+        for (var i = 0; i !== m_points.length - 1; ++i)
+            draw_line_from_index(context, i);
+        if (m_points.length !== 0 && m_candidate_point !== undefined) {
+            draw_line(context, array_last(m_points), m_candidate_point);
+            draw_line(context, m_candidate_point   , m_points[0]      );
+        }
+        if (m_points.length !== 0) {
+            var radius = 5;
+            var pt = m_points[0];
+            save_restore(context, function() {
+                context.beginPath();
+                context.arc(pt.x - radius, pt.y - radius, radius, 0, 2*Math.PI, false);
+                
+                // apply styling
+                // Indicator for point to return to
+                context.font = '12pt Verdana';
+                context.fillText("Click here to finish drawing.", pt.x, pt.y);
+                context.lineWidth = 3;
+                context.strokeStyle = 'red';
+                context.stroke();
+            });
+        }
+    }
+    
+    /***************************************************************************
+     *             Helper functions for editing the Polygon
+     **************************************************************************/
+    
+    var check_point_merging = function(index) {
+        var cpt = m_control_points[index].location();
+        var check_neighbor_for_merge = function(offset) {
+            var np = m_control_points[index + offset].location();
+            if (Vector.mag(Vector.sub(np, cpt)) < 10) {
+                m_control_points.splice(index, 1);
+                m_points.splice(index, 1);
+                console.log('spliced polygon'+m_points.length);
+            }
+        };
+        if (index > 0) check_neighbor_for_merge(-1);
+        if (index < m_points.length - 1) check_neighbor_for_merge(1);
+    }
+    
+    /***************************************************************************
+     *             Functions used while editing the Polygon
+     **************************************************************************/
+    
+    // Cursor click in edit mode. Indicates which control point was selected. 
+    var handle_cursor_click_editing = function(cursor_obj) {
+        m_control_points.forEach(function(control_point) {
+            control_point.handle_cursor_click(cursor_obj);
+        });
+        // note: assumes last is the translation control point
+        array_last(m_control_points).set_location(m_points);
+    };
+    
+    // Cursor movement after a control point has been selected.
+    // Handles movement, reshaping, or resizing 
+    var handle_cursor_move_editing = function(cursor_obj) {
+        m_control_points.forEach(function(control_point, index) {
+            var was_dragged = control_point.is_being_dragged();
+            control_point.handle_cursor_move(cursor_obj, m_points);
+            
+            // check if two points merged
+            if (was_dragged && !control_point.is_being_dragged()) {
+                check_point_merging(index);
+            }
+        });
+    }
+    
+    // Allows for line visiibility while editing. 
+    var draw_while_editing_or_viewing = function(context) {
+        for (var i = 0; i !== m_points.length; ++i)
+            draw_line_from_index(context, i);
+        m_control_points.forEach(function(control_point) {
+            control_point.draw(context);
+        });
+    };
+    
+    /***************************************************************************
+     *                          'public' functions
+     **************************************************************************/
+    
+    this.handle_cursor_click = handle_cursor_click_creation;
+    this.handle_cursor_move = handle_cursor_move_creation;
+    this.draw = draw_while_creating;
+    
+    this.finished_creating = function() { 
+        return self.draw === draw_while_editing_or_viewing; 
+    }
+    // Function that indicates a change to edit mode.
+    this.enable_editing = function() {
+        self.highlight();
+        m_control_points.push(new PolygonTranslationControlPoint());
+        array_last(m_control_points).set_location(m_points);
+        self.handle_cursor_click = handle_cursor_click_editing;
+        self.handle_cursor_move = handle_cursor_move_editing;
+    }
+    // Function that indicates a change away from edit mode to any other mode. 
+    this.disable_editing = function() {
+        m_control_points = [];
+        self.handle_cursor_move = self.handle_cursor_click = function(_){};
+    }
+    this.bounds = function() { return m_bounds; }
+    this.point_within = function(cursor_loc, size) {
+        return Vector.in_bounds(cursor_loc, self.bounds());
+    }
+    this.highlight = function() {
+        m_points.forEach(function(point, index, array) {
+            m_control_points.push(new PolygonEndControlPoint());
+            // effectively sets a reference
+            array_last(m_control_points).set_parent_point(array[index], index);
+        });
+    }
+    this.unhighlight = function() {
+        m_control_points = [];
+    }
+    this.explode = function() { return this; }
+    // Handles encoding. 
+    // Currently used for grouping. 
+    // Will be used for loading and exporting diagrams as well. 
+    this.expose = function(func) { 
+        var gv = func({ type : "Polygon", points : deepcopy(m_points) });
+        if (gv === undefined) return;
+        m_points = gv.points;
+        if (m_control_points === undefined) return;
+        this.disable_editing();
+        this.enable_editing();
+    }
+} // end of Polygon
+
+function Polygon(points_in, import_mode_in) {
+    assert_new.check(this);
+    // Array for polygon points
+    m_points = [];
+    if(points_in){
+        var m_points = points_in;
+    }
+
+    var import_mode = import_mode_in;
+    var m_bounds = undefined;
+    var m_candidate_point = undefined;
+    
+    // Array for polygon control points
+    var m_control_points = [];
+    var self = this;
+    
+    // Draw line from index:
+    // - Index is the starting point
+    // - Consider a polyfon as a structure made up of lines. 
+    // - Fisrt line is contructed with index and end position.
+    var draw_line_from_index = function(context, index) {
+        var next_index = (index + 1) % m_points.length;
+        draw_line(context, m_points[index], m_points[next_index]);        
+    }
+    
+    // All other polygon lines are a function or a point_a and a point_b
+    var draw_line = function(context, point_a, point_b) {
+        context.beginPath();
+        context.moveTo(point_a.x, point_a.y);
+        context.lineTo(point_b.x, point_b.y);
+        context.lineWidth = 5;
+        context.stroke();
+    }
+    
+    // The polygon is closed by returning to the first point.
+    // This function is used to understand whether the polygon is considered finished.
+    var within_first_point = function(cursor_loc) {
+        if (m_points.length === 0) return false;
+        return Math.abs(m_points[0].x - cursor_loc.x) < 10.0 &&
+               Math.abs(m_points[0].y - cursor_loc.y) < 10.0;
+    }
+    
+    // Updates the bounds
+    var update_bounds = function() {
+        if (m_points.length === 0)
+            return { x: 0, y: 0, width: 0, height: 0 };
+        var min_x = Infinity, min_y = Infinity, max_x = 0, max_y = 0;
+        m_points.forEach(function(pt) {
+            min_x = Math.min(min_x, pt.x);
+            min_y = Math.min(min_y, pt.y);
+            max_x = Math.max(max_x, pt.x);
+            max_y = Math.max(max_y, pt.y);
+        });
+        return m_bounds = { x: min_x, y: min_y, 
+                            width: max_x - min_x, height: max_y - min_y };
+    }
+    
+    /***************************************************************************
+     *             Functions used while creating the Polygon
+     **************************************************************************/
+    
+    // Handles the cursor click which indicates the intialization of 
+    // polygon drawing, the addition of a new corner, or the closing
+    // of the polygon
+    var handle_cursor_click_creation = function(cursor_obj) {
+        if (m_points.length === 0 && cursor_obj.is_pressed()) {
+            m_points.push(cursor_obj.location());
+            return;
+        }
+        if (!cursor_obj.is_pressed()) {
+            // is within 10px either way
+            if (within_first_point(cursor_obj.location())) {
+                // finish creating...
+                self.handle_cursor_click = self.handle_cursor_move = 
+                    function(_) {};
+                self.draw = draw_while_editing_or_viewing;
+                update_bounds();
+                return;
+            }
+            m_points.push(cursor_obj.location());
+        }
+    }
+    
+    // Handles cursor movement which indicates the various other points
+    var handle_cursor_move_creation = function(cursor_obj) {
+        if (m_points.length > 0) {
+            if(!import_mode){
+                m_candidate_point = cursor_obj.location();
+            }
+            
         }
     }
     
