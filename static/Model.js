@@ -483,8 +483,9 @@ function Model(cursor) {
                     // Push to m_diagram_objects afterwards
                     // Increment by 2, because every two objects consitutes a pair, first of it's
                     //      type, then of the data.
-                    for(var i = 0; i < objects.length; i+=2){
-
+                    console.log(objects.length);
+                    backtobreak: for(var i = 0; i < objects.length; i+=2){
+                        console.log("loop case: " + i);
                         //If it is a line
                         if(objects[i] == "Line"){
                             var split_words = /\b(x|y)\b/;
@@ -515,6 +516,7 @@ function Model(cursor) {
                         }
                         //If it is a polygon
                         else if(objects[i] == "Polygon"){
+
                             var split_words = /\b(x|y)\b/;
                             var data = objects[i+1].split(split_words);
                             //Remove useless first item.
@@ -526,8 +528,6 @@ function Model(cursor) {
                                 //alert("J: " + j + " data: " + data[j]);
                             }
 
-                            //every grouping of four points represents a corner
-                            // i.e. x, x_val, y, y_val
 
                             var points = [];
 
@@ -539,7 +539,6 @@ function Model(cursor) {
 
                             }
 
-                            // alert("last line: " + start_x + " " + start_y + " " + last_x + " " + last_y);
 
                             var c = document.getElementById("main-canvas");
                             var ctx = c.getContext("2d");
@@ -547,16 +546,54 @@ function Model(cursor) {
                             import_polygon.draw(ctx);
                             m_diagram_objects.push(import_polygon)
 
-                       
-
-                        // Recreate object using information stored in data.
-
-                        // Push to m_diagram_objects
 
                         }
                         // If it is a ellipse
                         else if(objects[i] == "Ellipse"){
                             // Code needs to be added 
+                            //alert(objects[i+1]);
+                            var split_words = /\b(points|x|y|q1_boundary|q2_boundary|q3_boundary|q4_boundary)\b/;
+                            var data = objects[i+1].split(split_words);
+                            // for (var i = 0; i < data.length; i++){
+                            //     alert(data[i]);
+                            // }
+
+                            //points built using data[4] for x and data[6] for y
+                            //q1 built by using data[10] for x and data[12] for y
+                            //q2 built by using data[16] for x and data[18] for y
+                            //q3 built by using data[22] for x and data[24] for y
+                            //q4 built by using data[28] for x and data[30] for y
+
+                            //reformatting data without garbage stuff
+                            for (var i = 0; i < data.length; i++){
+                                if(i == 4 || i == 6 || i == 10 || i == 12 || i == 16 || i == 18 || i == 22 || i == 24 || i == 28 || i == 30){
+                                    data[i] = data[i].replace(/[^0-9.]/g, '');
+                                }
+                            }
+
+                            var count = 0;
+                            var points = custom_vect(data[4], data[6]);
+                            var q1_boundary = custom_vect(data[10], data[12]);
+                            var q2_boundary = custom_vect(data[16], data[18]);
+                            var q3_boundary = custom_vect(data[22], data[24]);
+                            var q4_boundary = custom_vect(data[28], data[30]);
+
+                            var c = document.getElementById("main-canvas");
+                            var ctx = c.getContext("2d");
+                            var import_ellipse = new Ellipse(points, q1_boundary, q2_boundary, q3_boundary,q4_boundary, true);
+                            import_ellipse.set_boundaries();
+                            console.log("in between");
+                            if(count == 0){
+                                import_ellipse.draw(ctx);
+                            }
+                            count++;
+                            console.log("done drawing");
+                            m_diagram_objects.push(import_ellipse)
+                            console.log("done");
+                            i+=2;
+                            break backtobreak;
+
+                            
 
                         }
                         //else - bad situation

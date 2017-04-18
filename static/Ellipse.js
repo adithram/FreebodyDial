@@ -413,6 +413,287 @@ function Ellipse() {
 
 }
 
+function Ellipse(points_in, q1_in, q2_in, q3_in, q4_in, import_mode_in) {
+
+    console.log("in ellipse");
+
+
+    assert_new.check(this);
+    var import_mode = import_mode_in;
+    var ellipse_count = 0;
+    var q1_boundary = q1_in;
+    var q2_boundary = q2_in;
+    var q3_boundary = q3_in;
+    var q4_boundary = q4_in;
+    var x_axis = zero_vect();
+    var m_origin = points_in;
+    var m_points = [];
+    var m_control_points = [];
+    var m_bounds = [];
+    var m_major_vertex = 0;
+    var m_minor_vertex = 0;
+    var relative_zero = zero_vect();
+    var m_boundaries_set = false;
+    var m_finished_creating = false;
+    var m_editing = false;
+    var self = this;
+    
+    // Default values. 
+    this.set_location = function(x_, y_) { origin = { x: x_, y: y_ }; }
+    this.finished_creating = function() { return m_finished_creating; }
+
+    this.explode = function() { return this; } 
+    this.bounds = function() {
+        return { q1_boundary,
+                 q2_boundary,
+                 q3_boundary,
+                 q4_boundary }
+    }
+
+    this.set_points_and_bounds = function(){
+        // sets m_points to [q1_boundary, q2_boundary, q3_boundary, q4_boundary, m_origin]
+        m_points.push(q1_boundary);
+        m_points.push(q2_boundary);
+        m_points.push(q3_boundary);
+        m_points.push(q4_boundary);
+        m_points.push(m_origin);
+
+        // sets m_bounds to [q1_boundary, q2_boundary, q3_boundary, q4_boundary]
+        m_bounds.push(q1_boundary);
+        m_bounds.push(q2_boundary);
+        m_bounds.push(q3_boundary);
+        m_bounds.push(q4_boundary);
+    }
+
+    // Calculates all 4 points of the rectangular boundary surrounding the ellipse
+    // REQUIRES: (q1_boundary.x, q1_boundary.y), the Quadrant 1 boundary, AKA the top right corner boundary
+    //           (x_axis_x, x_axis.x), the location of the relative x axis limit for the ellipse on the canvas
+    //              NOTE: Also, the location of the midpoint of the right side of the rectangular boundary
+    // MODIFIES: this.boundaries, this.m_points, this.m_bounds
+    // EFFECTS: returns the 4 points of the rectangular boundary surrounding the ellipse
+    this.set_boundaries = function() { 
+
+        if(!import_mode){
+                
+            //NOTE: q2_boundary's x value can be calculated by subtracting 2 of the x_axis_x lengths from q1_boundary.x
+            //      q2_boundary's y value is the same as q1_boundary.y
+            var q2_x = q1_boundary.x - 2*(x_axis.x - m_origin.x);
+            var q2_y = q1_boundary.y;
+            q2_boundary = {x: q2_x, y: q2_y};
+
+            // NOTE: q3_boundary's x value is the same as q2_x
+            //       q3_boundary's y value can be calculated by subtracting 2 of the q2_y lengths from q2_y
+            var q3_x = q2_x;
+            var q3_y = q2_y - 2*(q2_y - m_origin.y);
+            q3_boundary = {x: q3_x, y: q3_y};
+
+            //NOTE: q4_boundary's x value is the same as q1_boundary.x
+            //      q4_boundary's y value is the same as q3_y
+            var q4_x = q1_boundary.x;
+            var q4_y = q3_y;
+            q4_boundary = {x: q4_x, y: q4_y};
+        }
+
+        // console.log("Q1 Boundary: ", q1_boundary);
+        // console.log("Q2 Boundary: ", q2_boundary);
+        // console.log("Q3 Boundary: ", q3_boundary);
+        // console.log("Q4 Boundary: ", q4_boundary);
+
+        // Major Vertex Length = Distance from Q1 to Q2 boundaries / 2
+        m_major_vertex = Vector.distance(q2_boundary, q1_boundary) / 2;
+
+        // Minor Vertex Length = Distance from Q1 to Q4 boundaries / 2
+        m_minor_vertex = Vector.distance(q4_boundary, q1_boundary) / 2;
+
+        // alert("In set boundaries");
+        // alert(m_major_vertex);
+        // alert(m_minor_vertex);
+
+        console.log("Major Vertex Length: ", m_major_vertex);
+        console.log("Minor Vertex Length: ", m_minor_vertex);
+
+    }
+    
+    var creation_second_handle_cursor_click = function(cursor_obj) {
+        console.log("checking second click")
+        if (cursor_obj.is_pressed()) return; // release event only
+
+        if(import_mode) return;
+
+        self.handle_cursor_move = function(cursor_obj) {
+            /*var A = cursor_obj.location();
+            var B = m_origin;
+            var C = relative_zero;
+            console.log("Point of reference for angle calculations: ", C);
+            var angle_of_rotation = find_angle(A,B,C);
+            console.log("What's our calculated angle of rotation? ", angle_of_rotation);*/
+
+        }
+        self.handle_cursor_click = function(cursor_obj) {
+            if (!cursor_obj.is_pressed()) {
+                
+                //m_co_vertex = cursor_obj.location();
+                if(!import_mode){
+                    m_finished_creating = true;
+                console.log("Second click registered! We done :D");
+                    self.handle_cursor_click = self.handle_cursor_move = function(_) {}
+                }
+            }
+        }
+    }
+    
+    this.handle_cursor_click = function(cursor_obj) {
+        if(!import_mode){
+            if (cursor_obj.is_pressed()) {
+                m_origin = cursor_obj.location();
+                console.log("ellipse location set at ", m_origin.x, ", ", m_origin.y);
+            }
+            console.log("cursor move event function changed");
+            self.handle_cursor_move = function(cursor_obj) {
+                q1_boundary = cursor_obj.location();
+                x_axis = {x: q1_boundary.x, y: m_origin.y};
+                self.set_boundaries();
+
+                if(!cursor_obj.is_pressed()){
+                    q1_boundary = cursor_obj.location();
+                    console.log("Mouse released. STOP DRAWING.");
+                    relative_zero = cursor_obj.location();
+                    m_boundaries_set = true;
+
+                    self.set_points_and_bounds();
+                    return;
+                }
+            }
+            
+            self.handle_cursor_click = creation_second_handle_cursor_click;
+        }
+
+        
+    }
+    
+    this.handle_cursor_move = function(_) {} 
+    
+    this.draw = function(context) {
+        // alert("in draw function");
+
+        // save state
+        context.save();
+
+        //console.log("Drawing ellipse...");
+
+        context.beginPath();
+
+        // Below, use to draw reference points to the 4 boundary points
+        // NOTE: Can be used for m_control_points??
+        // context.moveTo(m_origin.x, m_origin.y);
+        // context.lineTo(q1_boundary.x, q1_boundary.y);
+
+        // context.moveTo(m_origin.x, m_origin.y);
+        // context.lineTo(q2_boundary.x, q2_boundary.y);
+
+        // context.moveTo(m_origin.x, m_origin.y);
+        // context.lineTo(q3_boundary.x, q3_boundary.y);
+
+        // context.moveTo(m_origin.x, m_origin.y);
+        // context.lineTo(q4_boundary.x, q4_boundary.y);
+
+        //context.moveTo(q4_boundary.x, q4_boundary.y);        
+        //context.lineTo(q1_boundary.x, q1_boundary.y);
+
+        context.lineWidth = 5;
+        context.strokeStyle = 'black';
+
+        // Draw Ellipse based on CanvasRenderingContext2D.ellipse()
+        // alert(m_origin.x);
+        // alert(m_origin.y);
+        // alert(m_major_vertex);
+        // alert(m_minor_vertex);
+        context.ellipse(m_origin.x, m_origin.y, m_major_vertex, m_minor_vertex, 0, 0, 2*Math.PI);
+
+        if(m_editing){
+            console.log("Edit time. Draw dem rectangles.");
+            m_control_points.forEach(function(control_point) {
+                control_point.draw(context);
+            });
+        }
+
+        context.stroke();
+        context.closePath();
+        context.restore();
+        
+    }
+
+    this.expose = function(func) {
+        var gv = func({ type : "Ellipse", points : m_origin, q1_boundary, q2_boundary, q3_boundary, q4_boundary });
+        if (gv === undefined) return;
+        m_origin = gv.points[0];
+        q1_boundary = gv.points[1];
+        q2_boundary = gv.points[2];
+        q3_boundary = gv.points[3];
+        q4_boundary = gv.points[4];
+        this.disable_editing();
+        this.enable_editing();
+    }
+
+    // Cursor click in edit mode. Indicates which control point was selected. 
+    var handle_cursor_click_editing = function(cursor_obj) {
+        m_control_points.forEach(function(control_point) {
+            control_point.handle_cursor_click(cursor_obj);
+        });
+        // note: assumes last is the translation control point
+        array_last(m_control_points).set_location(m_origin);
+    };
+
+    // Cursor movement after a control point has been selected.
+    // Handles movement, reshaping, or resizing 
+    var handle_cursor_move_editing = function(cursor_obj) {
+        m_control_points.forEach(function(control_point, index) {
+            var was_dragged = control_point.is_being_dragged();
+            control_point.handle_cursor_move(cursor_obj, m_points);
+            
+            // check if two points merged
+            if (was_dragged && !control_point.is_being_dragged()) {
+                check_point_merging(index);
+            }
+        });
+    }
+
+    this.highlight = function() {
+        console.log("Looking at highlight...");
+        m_points.forEach(function(point, index, array) {
+            console.log("For point...", point);
+            m_control_points.push(new EllipseEndControlPoint());
+            // effectively sets a reference
+            array_last(m_control_points).set_parent_point(array[index], index);
+        });
+    }
+    this.unhighlight = function() {
+        m_control_points = [];
+    }
+
+    // Function that indicates a change to edit mode.
+    this.enable_editing = function() {
+        console.log("Ellipse Edit Mode enabled!");
+        self.highlight();
+        m_control_points.push(new EllipseTranslationControlPoint());
+        m_editing = true;
+        array_last(m_control_points).set_location(m_origin);
+        self.handle_cursor_click = handle_cursor_click_editing;
+        self.handle_cursor_move = handle_cursor_move_editing;
+    }
+    // Function that indicates a change away from edit mode to any other mode. 
+    this.disable_editing = function() {
+        console.log("Ellipse Edit Mode DISABLED.");
+        m_editing = false;
+        m_control_points = [];
+        self.handle_cursor_move = self.handle_cursor_click = function(_){};
+    }
+    this.bounds = function() { return m_bounds; }
+    this.point_within = function(cursor_loc, size) {
+        return Vector.in_bounds(cursor_loc, self.bounds());
+    }
+
+}
 /***********************************************
     Running list of bugs
         1) Double clicking
