@@ -224,7 +224,7 @@ function Polygon() {
     // Updates the bounds
     var update_bounds = function() {
         if (m_points.length === 0)
-            return { x: 0, y: 0, width: 0, height: 0 };
+            return m_bounds = { x: 0, y: 0, width: 0, height: 0 };
         var min_x = Infinity, min_y = Infinity, max_x = 0, max_y = 0;
         m_points.forEach(function(pt) {
             min_x = Math.min(min_x, pt.x);
@@ -402,11 +402,12 @@ function Polygon() {
     this.expose = function(func) {
         var gv = func({ type : "Polygon", points : deepcopy(m_points) });
         if (gv === undefined) return;
-        m_points = gv.points;
-        if (m_control_points === undefined) return;
+        m_points = deepcopy(gv.points);
         update_bounds();
+        this.draw = draw_while_editing_or_viewing;
+        self.handle_cursor_move = self.handle_cursor_click = function(_){};
+        if (m_control_points.length === 0) return;
         this.disable_editing();
         this.enable_editing();
-        this.draw = draw_while_editing_or_viewing;
     }
 } // end of Polygon

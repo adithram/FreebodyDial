@@ -408,7 +408,6 @@ function Model(cursor) {
         saveText(myJSON, "filename.json");
     });
 
-
     // Function that handles import of object
     m_bar_menu.push_entry("Import", function() {
         console.log("Import!");
@@ -423,6 +422,7 @@ function Model(cursor) {
             diagram_object.expose(function() { return obj; });
             m_diagram_objects.push(diagram_object);
         });
+        change_to_draw_mode(Configuration.DIAGRAM_TYPES["Line"].create);
         return;
 
         // Parse the object, and split it according to delimitters
