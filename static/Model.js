@@ -612,12 +612,12 @@ function Model(cursor) {
         tCtx = tempCanvas.getContext("2d");
 
         tCtx.canvas.width = window_width;
-        tCtx.canvas.height = window_height - window_height/3.5;
+        tCtx.canvas.height = window_height - window_height/4.4;
         var x_start = 0;
-        var y_start_org = window_height/3.5;
+        var y_start_org = window_height/4.4;
         var y_start_copy = 0;
         var width = window_width ;
-        var height = window_height - window_height/3.5;
+        var height = window_height - window_height/4.4;
       
         // Create and download image. 
         tCtx.drawImage(canvasElement, 
@@ -652,12 +652,12 @@ m_bar_menu.push_entry("Print", function(){
         tCtx = tempCanvas.getContext("2d");
        
         tCtx.canvas.width = window_width;
-        tCtx.canvas.height = window_height - window_height/3.5;
+        tCtx.canvas.height = window_height - window_height/4.4;
         var x_start = 0;
-        var y_start_org = window_height/3.5;
+        var y_start_org = window_height/4.4;
         var y_start_copy = 0;
         var width = window_width ;
-        var height = window_height - window_height/3.5;
+        var height = window_height - window_height/4.4;
       
         // Create and download image. 
         tCtx.drawImage(canvasElement, 
